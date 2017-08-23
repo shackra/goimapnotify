@@ -50,6 +50,21 @@ type IDLEEvent struct {
 	EventType string
 }
 
+// PrepareCommand parse a string and return a command executable by Go
+func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
+	var commandstr string
+	if strings.Contains("%s", command) {
+		commandstr = fmt.Sprintf(command, rsp.Mailbox)
+	} else {
+		commandstr = command
+	}
+	commandsplt := strings.Split(commandstr, " ")
+	commandhead := commandsplt[0]
+	args := commandsplt[:1]
+	cmd := exec.Command(commandhead, args...)
+	return cmd
+}
+
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	raw, err := ioutil.ReadFile("/home/jorge/.config/imapnotify/jorge.conf.private")
@@ -73,24 +88,19 @@ func main() {
 
 	// Process incoming events from the mailboxes
 	for rsp := range events {
-		var commandstr string
 		log.Printf("[DBG] Event %s for %s", rsp.EventType, rsp.Mailbox)
 		if rsp.EventType == "EXPUNGE" || rsp.EventType == "EXISTS" || rsp.EventType == "RECENT" {
-			if strings.Contains("%s", conf.OnNewMail) {
-				commandstr = fmt.Sprintf(conf.OnNewMail, rsp.Mailbox)
-			} else {
-				commandstr = conf.OnNewMail
-			}
-			commandsplt := strings.Split(commandstr, " ")
-			command := commandsplt[0]
-			args := commandsplt[:1]
-			cmd := exec.Command(command, args...)
-			log.Printf("[DBG] Running command %s", commandstr)
+			cmd := PrepareCommand(conf.OnNewMail, rsp)
 			err := cmd.Run()
 			if err != nil {
-				log.Printf("[ERR] %s for command %s", err, commandstr)
+				log.Printf("[ERR] OnNewMail command failed: %s", err)
 			} else {
 				// execute the post command thing
+				cmd := PrepareCommand(conf.OnNewMailPost, rsp)
+				err := cmd.Run()
+				if err != nil {
+					log.Printf("[WARN] OnNewMailPost failed: %s", err)
+				}
 			}
 		}
 	}
