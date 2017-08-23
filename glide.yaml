@@ -1,0 +1,5 @@
+package: gitlab.com/shackra/go-imapnotify
+import:
+- package: github.com/mxk/go-imap
+  subpackages:
+  - imap
