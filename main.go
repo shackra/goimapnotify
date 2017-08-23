@@ -1,20 +1,5 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"os/exec"
-	"os/signal"
-	"strings"
-	"sync"
-	"syscall"
-
-	"github.com/mxk/go-imap/imap"
-)
-
 // Execute scripts on events using IDLE imap command (Go version)
 // Copyright (C) 2017  Jorge Javier Araya Navarro
 
@@ -30,6 +15,19 @@ import (
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
+)
 
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
@@ -53,44 +51,50 @@ type IDLEEvent struct {
 }
 
 func main() {
-	imap.DefaultLogMask = imap.LogConn | imap.LogRaw
+	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	raw, err := ioutil.ReadFile("/home/jorge/.config/imapnotify/jorge.conf.private")
 	if err != nil {
 		log.Fatalf("[ERR] Can't read file: %s", err)
 	}
 	var conf NotifyConfig
-	json.Unmarshal(raw, &conf)
+	_ = json.Unmarshal(raw, &conf)
 
 	events := make(chan IDLEEvent, 100)
 	quit := make(chan os.Signal, 1)
 
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	var wg sync.WaitGroup
+	guard := guardian{
+		mx: &sync.Mutex{},
+		wg: &sync.WaitGroup{},
+	}
 
-	_ = NewWatchMailBox(conf, events, quit, &wg)
+	NewWatchMailBox(conf, events, quit, &guard)
 
 	// Process incoming events from the mailboxes
 	for rsp := range events {
 		var commandstr string
 		log.Printf("[DBG] Event %s for %s", rsp.EventType, rsp.Mailbox)
-		if strings.Contains("%s", conf.OnNewMail) {
-			commandstr = fmt.Sprintf(conf.OnNewMail, rsp.Mailbox)
-		} else {
-			commandstr = conf.OnNewMail
-		}
-		commandsplt := strings.Split(commandstr, " ")
-		command := commandsplt[1:][0]
-		args := commandsplt[:1]
-		cmd := exec.Command(command, args...)
-		err := cmd.Run()
-		if err != nil {
-			log.Printf("[ERR] %s for command %s", err, commandstr)
-		} else {
-			// execute the post command thing
+		if rsp.EventType == "EXPUNGE" || rsp.EventType == "EXISTS" || rsp.EventType == "RECENT" {
+			if strings.Contains("%s", conf.OnNewMail) {
+				commandstr = fmt.Sprintf(conf.OnNewMail, rsp.Mailbox)
+			} else {
+				commandstr = conf.OnNewMail
+			}
+			commandsplt := strings.Split(commandstr, " ")
+			command := commandsplt[0]
+			args := commandsplt[:1]
+			cmd := exec.Command(command, args...)
+			log.Printf("[DBG] Running command %s", commandstr)
+			err := cmd.Run()
+			if err != nil {
+				log.Printf("[ERR] %s for command %s", err, commandstr)
+			} else {
+				// execute the post command thing
+			}
 		}
 	}
 
 	log.Println("[INF] Waiting for goroutines to finish...")
-	wg.Wait()
+	guard.Wait()
 }

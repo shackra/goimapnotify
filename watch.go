@@ -1,15 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"log"
-	"os"
-	"sync"
-	"time"
-
-	"github.com/mxk/go-imap/imap"
-)
-
 // This file is part of goimapnotify
 // Copyright (C) 2017  Jorge Javier Araya Navarro
 
@@ -26,6 +16,15 @@ import (
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"github.com/mxk/go-imap/imap"
+)
+
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
 	c     *imap.Client
@@ -36,8 +35,7 @@ type WatchMailBox struct {
 }
 
 // NewWatchMailBox create a list of WatchMailBoxes and start them in parallel
-func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signal, wg *sync.WaitGroup) []WatchMailBox {
-	var mailboxes []WatchMailBox
+func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signal, g *guardian) {
 	for _, box := range conf.Boxes {
 		var err error
 		var watch WatchMailBox
@@ -53,10 +51,6 @@ func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signa
 		if err != nil {
 			log.Fatalf("[ERR] Cannot connect to %s:%d: %s", conf.Host, conf.Port, err)
 		}
-
-		// Print server greeting (first response in the unilateral server data queue)
-		fmt.Println("Server says hello:", watch.c.Data[0].Info)
-		watch.c.Data = nil
 
 		// Enable encryption, if supported by the server
 		if watch.c.Caps["STARTTLS"] && conf.TLS && conf.Port != 993 {
@@ -80,36 +74,41 @@ func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signa
 		if err != nil {
 			log.Fatalf("[ERR] Can't SELECT mailbox %s", box)
 		}
+		watch.c.Data = nil
 
 		go func() {
-			wg.Add(1)
-			defer wg.Done()
+			g.Add(1)
+			defer g.Done()
 			defer watch.c.Logout(30 * time.Second)
 			idle, err := watch.c.Idle()
 			if err != nil {
 				log.Fatalf("[ERR] Can't start IDLE command: %s", err)
 			}
+
 			for idle.InProgress() {
 				select {
-				case <-quit:
-					watch.c.IdleTerm()
-					log.Printf("[INF] Stopping watching box %s", mailbox)
-				}
-				watch.c.Recv(-1)
-				// Process unilateral server data
-				for _, watch.rsp = range watch.c.Data {
-					// Create events and send them through
-					// the channel
-					var rsp = IDLEEvent{
-						Mailbox:   mailbox,
-						EventType: watch.rsp.Label,
+				case <-watch.quit:
+					idle, _ = watch.c.IdleTerm()
+					log.Printf("[INF] Stopping watcher for box %s", mailbox)
+				default:
+					err = watch.c.Recv(1 * time.Second)
+					// Process unilateral server data
+					if err == nil {
+						for _, watch.rsp = range watch.c.Data {
+							// Create events and send them through
+							// the channel
+							var rsp = IDLEEvent{
+								Mailbox:   mailbox,
+								EventType: watch.rsp.Label,
+							}
+							watch.event <- rsp
+						}
+						watch.c.Data = nil
 					}
-					watch.event <- rsp
+
 				}
-				watch.c.Data = nil
 			}
+			g.Close(watch.event)
 		}()
-		mailboxes = append(mailboxes, watch)
 	}
-	return mailboxes
 }
