@@ -17,7 +17,6 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -40,31 +39,7 @@ func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signa
 		var err error
 		var watch WatchMailBox
 		mailbox := box
-		if conf.Port != 0 {
-			watch.c, err = imap.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
-		} else if conf.Port == 993 {
-			watch.c, err = imap.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), nil)
-		} else {
-			watch.c, err = imap.Dial(conf.Host)
-		}
-
-		if err != nil {
-			log.Fatalf("[ERR] Cannot connect to %s:%d: %s", conf.Host, conf.Port, err)
-		}
-
-		// Enable encryption, if supported by the server
-		if watch.c.Caps["STARTTLS"] && conf.TLS && conf.Port != 993 {
-			watch.c.StartTLS(nil)
-		}
-
-		// Authenticate
-		if watch.c.State() == imap.Login {
-			_, err = watch.c.Login(conf.Username, conf.Password)
-		}
-
-		if err != nil {
-			log.Fatalf("[ERR] Can't login to %s with %s: %s", conf.Host, conf.Username, err)
-		}
+		watch.c = newClient(conf)
 
 		// Include channels
 		watch.quit = quit
