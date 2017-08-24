@@ -18,15 +18,20 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
+
+	"github.com/mxk/go-imap/imap"
 )
 
 // NotifyConfig holds the configuration
@@ -65,46 +70,91 @@ func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
 	return cmd
 }
 
+func walkMailbox(c *imap.Client, b string, l int) error {
+	cmd, err := imap.Wait(c.List(b, "%"))
+	if err != nil {
+		return err
+	}
+
+	for pos, rsp := range cmd.Data {
+		box := boxchar(pos, l, len(cmd.Data))
+		fmt.Println(box, filepath.Base(rsp.MailboxInfo().Name))
+		if rsp.MailboxInfo().Attrs["\\Haschildren"] {
+			err = walkMailbox(c, rsp.MailboxInfo().Name+rsp.MailboxInfo().Delim, l+1)
+			if err != nil {
+				log.Printf("[ERR] While walking Mailboxes: %s\n", err)
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func boxchar(p, l, b int) string {
+	var drawthis string
+	switch {
+	case p == b || p == 0 && l > 0:
+		drawthis = "└─"
+	case p == 0 && p < b:
+		drawthis = "┌─"
+	case p > 0 && p < b:
+		drawthis = "├─"
+	}
+	if l > 0 {
+		drawthis = "│" + strings.Repeat(" ", l) + drawthis
+	}
+	return drawthis
+}
+
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
-	raw, err := ioutil.ReadFile("/home/jorge/.config/imapnotify/jorge.conf.private")
+	fileconf := flag.String("conf", "", "Configuration file")
+	list := flag.Bool("list", false, "List all mailboxes and exit")
+	flag.Parse()
+	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
 		log.Fatalf("[ERR] Can't read file: %s", err)
 	}
 	var conf NotifyConfig
 	_ = json.Unmarshal(raw, &conf)
 
-	events := make(chan IDLEEvent, 100)
-	quit := make(chan os.Signal, 1)
+	if *list {
+		client := newClient(conf)
+		defer client.Logout(30 * time.Second)
+		_ = walkMailbox(client, "", 0)
+	} else {
+		events := make(chan IDLEEvent, 100)
+		quit := make(chan os.Signal, 1)
 
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	guard := guardian{
-		mx: &sync.Mutex{},
-		wg: &sync.WaitGroup{},
-	}
+		guard := guardian{
+			mx: &sync.Mutex{},
+			wg: &sync.WaitGroup{},
+		}
 
-	NewWatchMailBox(conf, events, quit, &guard)
+		NewWatchMailBox(conf, events, quit, &guard)
 
-	// Process incoming events from the mailboxes
-	for rsp := range events {
-		log.Printf("[DBG] Event %s for %s", rsp.EventType, rsp.Mailbox)
-		if rsp.EventType == "EXPUNGE" || rsp.EventType == "EXISTS" || rsp.EventType == "RECENT" {
-			cmd := PrepareCommand(conf.OnNewMail, rsp)
-			err := cmd.Run()
-			if err != nil {
-				log.Printf("[ERR] OnNewMail command failed: %s", err)
-			} else {
-				// execute the post command thing
-				cmd := PrepareCommand(conf.OnNewMailPost, rsp)
+		// Process incoming events from the mailboxes
+		for rsp := range events {
+			log.Printf("[DBG] Event %s for %s", rsp.EventType, rsp.Mailbox)
+			if rsp.EventType == "EXPUNGE" || rsp.EventType == "EXISTS" || rsp.EventType == "RECENT" {
+				cmd := PrepareCommand(conf.OnNewMail, rsp)
 				err := cmd.Run()
 				if err != nil {
-					log.Printf("[WARN] OnNewMailPost failed: %s", err)
+					log.Printf("[ERR] OnNewMail command failed: %s", err)
+				} else {
+					// execute the post command thing
+					cmd := PrepareCommand(conf.OnNewMailPost, rsp)
+					err := cmd.Run()
+					if err != nil {
+						log.Printf("[WARN] OnNewMailPost failed: %s", err)
+					}
 				}
 			}
 		}
-	}
 
-	log.Println("[INF] Waiting for goroutines to finish...")
-	guard.Wait()
+		log.Println("[INF] Waiting for goroutines to finish...")
+		guard.Wait()
+	}
 }
