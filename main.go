@@ -19,34 +19,29 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/mxk/go-imap/imap"
 )
 
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
-	Host       string
-	Port       int  `json:",omitempty"`
-	TLS        bool `json:",omitempty"`
+	Host       string `json:"host"`
+	Port       int    `json:"port,omitempty"`
+	TLS        bool   `json:"tls,omitempty"`
 	TLSOptions struct {
 		RejectUnauthorized bool
-	} `json:",omitempty"`
-	Username      string
-	Password      string
-	OnNewMail     string
-	OnNewMailPost string
-	Boxes         []string
+	} `json:"tlsOption"`
+	Username      string   `json:"username"`
+	Password      string   `json:"password"`
+	PasswordCMD   string   `json:"passwordCmd,omitempty"`
+	OnNewMail     string   `json:"onNewMail"`
+	OnNewMailPost string   `json:"onNewMailPost,omitempty"`
+	Boxes         []string `json:"boxes"`
 }
 
 // IDLEEvent models an IDLE event
@@ -55,60 +50,9 @@ type IDLEEvent struct {
 	EventType string
 }
 
-// PrepareCommand parse a string and return a command executable by Go
-func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
-	var commandstr string
-	if strings.Contains("%s", command) {
-		commandstr = fmt.Sprintf(command, rsp.Mailbox)
-	} else {
-		commandstr = command
-	}
-	commandsplt := strings.Split(commandstr, " ")
-	commandhead := commandsplt[0]
-	args := commandsplt[:1]
-	cmd := exec.Command(commandhead, args...)
-	return cmd
-}
-
-func walkMailbox(c *imap.Client, b string, l int) error {
-	cmd, err := imap.Wait(c.List(b, "%"))
-	if err != nil {
-		return err
-	}
-
-	for pos, rsp := range cmd.Data {
-		box := boxchar(pos, l, len(cmd.Data))
-		fmt.Println(box, filepath.Base(rsp.MailboxInfo().Name))
-		if rsp.MailboxInfo().Attrs["\\Haschildren"] {
-			err = walkMailbox(c, rsp.MailboxInfo().Name+rsp.MailboxInfo().Delim, l+1)
-			if err != nil {
-				log.Printf("[ERR] While walking Mailboxes: %s\n", err)
-				return err
-			}
-		}
-	}
-	return err
-}
-
-func boxchar(p, l, b int) string {
-	var drawthis string
-	switch {
-	case p == b || p == 0 && l > 0:
-		drawthis = "└─"
-	case p == 0 && p < b:
-		drawthis = "┌─"
-	case p > 0 && p < b:
-		drawthis = "├─"
-	}
-	if l > 0 {
-		drawthis = "│" + strings.Repeat(" ", l) + drawthis
-	}
-	return drawthis
-}
-
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
-	fileconf := flag.String("conf", "", "Configuration file")
+	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	flag.Parse()
 	raw, err := ioutil.ReadFile(*fileconf)
@@ -116,14 +60,17 @@ func main() {
 		log.Fatalf("[ERR] Can't read file: %s", err)
 	}
 	var conf NotifyConfig
-	_ = json.Unmarshal(raw, &conf)
+	err = json.Unmarshal(raw, &conf)
+	if err != nil {
+		log.Fatalf("Can't parse the configuration: %s", err)
+	}
 
 	if *list {
 		client := newClient(conf)
 		defer client.Logout(30 * time.Second)
 		_ = walkMailbox(client, "", 0)
 	} else {
-		events := make(chan IDLEEvent, 100)
+		events := make(chan IDLEEvent, 1)
 		quit := make(chan os.Signal, 1)
 
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -135,9 +82,11 @@ func main() {
 
 		NewWatchMailBox(conf, events, quit, &guard)
 
+		// Send fake, first run, event
+		events <- IDLEEvent{EventType: "EXISTS", Mailbox: "INBOX"}
+
 		// Process incoming events from the mailboxes
 		for rsp := range events {
-			log.Printf("[DBG] Event %s for %s", rsp.EventType, rsp.Mailbox)
 			if rsp.EventType == "EXPUNGE" || rsp.EventType == "EXISTS" || rsp.EventType == "RECENT" {
 				cmd := PrepareCommand(conf.OnNewMail, rsp)
 				err := cmd.Run()
