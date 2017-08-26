@@ -7,6 +7,10 @@ Changelog
 
 New
 ~~~
+- Add GPL3+ license to the project. [Jorge Araya Navarro]
+- Add read me file. [Jorge Araya Navarro]
+
+  Explains important things about the application
 - Add read me file. [Jorge Araya Navarro]
 
   Explains important things about the application
