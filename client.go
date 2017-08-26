@@ -30,7 +30,10 @@ func newClient(conf NotifyConfig) *imap.Client {
 	if conf.Port != 0 {
 		c, err = imap.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
 	} else if conf.Port == 993 {
-		c, err = imap.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), nil)
+		c, err = imap.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), &tls.Config{
+			ServerName:         conf.Host,
+			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+		})
 	} else {
 		c, err = imap.Dial(conf.Host)
 	}
@@ -40,7 +43,7 @@ func newClient(conf NotifyConfig) *imap.Client {
 	}
 
 	// Enable encryption, if supported by the server
-	if c.Caps["STARTTLS"] {
+	if c.Caps["STARTTLS"] && conf.Port != 993 {
 		// #nosec
 		c.StartTLS(&tls.Config{
 			ServerName:         conf.Host,
