@@ -17,6 +17,7 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 
@@ -39,8 +40,12 @@ func newClient(conf NotifyConfig) *imap.Client {
 	}
 
 	// Enable encryption, if supported by the server
-	if c.Caps["STARTTLS"] && conf.TLS && conf.Port != 993 {
-		c.StartTLS(nil)
+	if c.Caps["STARTTLS"] {
+		// #nosec
+		c.StartTLS(&tls.Config{
+			ServerName:         conf.Host,
+			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+		})
 	}
 
 	// Authenticate
@@ -51,5 +56,6 @@ func newClient(conf NotifyConfig) *imap.Client {
 	if err != nil {
 		log.Fatalf("[ERR] Can't login to %s with %s: %s", conf.Host, conf.Username, err)
 	}
+	log.Printf("Connected to %s\n", conf.Host)
 	return c
 }
