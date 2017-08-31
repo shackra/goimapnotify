@@ -105,5 +105,6 @@ func main() {
 
 		log.Println("[INF] Waiting for goroutines to finish...")
 		guard.Wait()
+		log.Println("Bye")
 	}
 }

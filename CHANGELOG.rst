@@ -7,6 +7,9 @@ Changelog
 
 New
 ~~~
+- Send the IDLE command again after 15 minutes. [Jorge Araya Navarro]
+
+  This avoid the server closing the connection
 - Add GPL3+ license to the project. [Jorge Araya Navarro]
 - Add read me file. [Jorge Araya Navarro]
 
