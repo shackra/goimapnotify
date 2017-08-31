@@ -24,6 +24,10 @@ import (
 	"github.com/mxk/go-imap/imap"
 )
 
+const (
+	idleduration = 15 * time.Minute
+)
+
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
 	c     *imap.Client
@@ -56,6 +60,7 @@ func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signa
 			defer g.Done()
 			defer watch.c.Logout(30 * time.Second)
 			idle, err := watch.c.Idle()
+			timer := time.NewTimer(idleduration)
 			if err != nil {
 				log.Fatalf("[ERR] Can't start IDLE command: %s", err)
 			}
@@ -65,6 +70,15 @@ func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signa
 				case <-watch.quit:
 					idle, _ = watch.c.IdleTerm()
 					log.Printf("[INF] Stopping watcher for box %s", mailbox)
+					timer.Stop()
+				case <-timer.C:
+					_, _ = watch.c.IdleTerm()
+					idle, err = watch.c.Idle()
+					if err != nil {
+						log.Fatalf("[ERR] Can't re-start IDLE command: %s", err)
+					}
+					log.Printf("[INF] Restarting IDLE for mailbox: %s\n", mailbox)
+					_ = timer.Reset(idleduration)
 				default:
 					err = watch.c.Recv(1 * time.Second)
 					// Process unilateral server data
