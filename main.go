@@ -31,7 +31,7 @@ import (
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
 	Host       string `json:"host"`
-	Port       int    `json:"port,omitempty"`
+	Port       int    `json:"port"`
 	TLS        bool   `json:"tls,omitempty"`
 	TLSOptions struct {
 		RejectUnauthorized bool
