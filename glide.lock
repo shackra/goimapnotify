@@ -1,8 +1,0 @@
-hash: 9ddf3658c67d65513e5d07f717fc05cc70feb48f23ac5b91aa768c58b875f0c3
-updated: 2017-08-22T15:12:12.458080141-06:00
-imports:
-- name: github.com/mxk/go-imap
-  version: 531c36c3f12d6a03ea766b07a77314aa51ec17f3
-  subpackages:
-  - imap
-testImports: []

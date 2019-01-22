@@ -1,11 +1,9 @@
-image: bluebu/gitlab-runner-golang
+image: golang:1.11.1
 
 before_script:
   - ln -s /builds /go/src/gitlab.com
   - cd /go/src/gitlab.com/shackra/goimapnotify||cd /go/src/gitlab.com/project-0
-  - curl https://glide.sh/get | sh
-  - glide update
-  - glide install
+  - go get github.com/golang/dep/...
 
 stages:
   - test
@@ -13,6 +11,7 @@ stages:
 testing:
   stage: test
   script:
+    - dep ensure
     - go tool vet -composites=false -shadow=true *.go
     - go build -v
     - go test -coverprofile goimapnotify
