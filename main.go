@@ -55,6 +55,7 @@ func main() {
 	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	flag.Parse()
+
 	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
 		log.Fatalf("[ERR] Can't read file: %s", err)
@@ -66,10 +67,13 @@ func main() {
 	}
 
 	if *list {
+		// walk the mailbox
 		client := newClient(conf)
+		//nolint
 		defer client.Logout(30 * time.Second)
 		_ = walkMailbox(client, "", 0)
 	} else {
+		// Listen to events
 		events := make(chan IDLEEvent, 1)
 		quit := make(chan os.Signal, 1)
 
@@ -82,7 +86,7 @@ func main() {
 
 		NewWatchMailBox(conf, events, quit, &guard)
 
-		// Send fake, first run, event
+		// Send fake-first-run event
 		events <- IDLEEvent{EventType: "EXISTS", Mailbox: "INBOX"}
 
 		// Process incoming events from the mailboxes

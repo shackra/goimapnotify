@@ -31,7 +31,6 @@ const (
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
 	c     *imap.Client
-	cmd   *imap.Command
 	rsp   *imap.Response
 	event chan<- IDLEEvent
 	quit  <-chan os.Signal
@@ -58,12 +57,13 @@ func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signa
 		go func() {
 			g.Add(1)
 			defer g.Done()
+			//nolint
 			defer watch.c.Logout(30 * time.Second)
 			idle, err := watch.c.Idle()
-			timer := time.NewTimer(idleduration)
 			if err != nil {
 				log.Fatalf("[ERR] Can't start IDLE command: %s", err)
 			}
+			timer := time.NewTimer(idleduration)
 
 			for idle.InProgress() {
 				select {
