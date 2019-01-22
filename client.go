@@ -45,12 +45,13 @@ func newClient(conf NotifyConfig) *imap.Client {
 	}
 
 	// Enable encryption, if supported by the server
-	if c.Caps["STARTTLS"] && conf.Port != 993 {
-		// #nosec
-		c.StartTLS(&tls.Config{
-			ServerName:         conf.Host,
-			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
-		})
+	_, err = c.StartTLS(&tls.Config{
+		ServerName:         conf.Host,
+		InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+	})
+
+	if err != nil {
+		log.Printf("[WARN] Cannot enable STARTTLS: %s", err)
 	}
 
 	// Authenticate
