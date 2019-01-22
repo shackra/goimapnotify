@@ -27,15 +27,17 @@ import (
 func newClient(conf NotifyConfig) *imap.Client {
 	var c *imap.Client
 	var err error
-	if conf.Port != 0 {
-		c, err = imap.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
-	} else if conf.Port == 993 {
+	if conf.Port == 0 {
+		log.Fatal("[ERR] Port cannot be 0")
+	}
+
+	if conf.TLS {
 		c, err = imap.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), &tls.Config{
 			ServerName:         conf.Host,
 			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
 		})
 	} else {
-		c, err = imap.Dial(conf.Host)
+		c, err = imap.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
 	}
 
 	if err != nil {
