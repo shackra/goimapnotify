@@ -2,14 +2,53 @@ Changelog
 =========
 
 
-(unreleased)
-------------
+2.0 (2019-04-27)
+----------------
+
+New
+~~~
+- Enable debug flag that shows network events. [Jorge Araya Navarro]
+
+  Requirement of some users that need to debug network issues with their IMAP servers. The debugging
+  output starts right after goimapnotify was able to establish a connection with the IMAP server but
+  not before the user credentials are sent
+- Updates code to use emersion's libraries. [Jorge Araya Navarro]
+
+  the past library was unmaintained and old
+
+
+1.1 (2019-01-22)
+----------------
+
+Changes
+~~~~~~~
+- Change glide for dep. [Jorge Araya Navarro]
+- Update copyright date. [Jorge Araya Navarro]
+- Make port in configuration mandatory. [Jorge Araya Navarro]
+- Always try to enable STARTTLS. [Jorge Araya Navarro]
+
+Fix
+~~~
+- Fix logical error in code. [Jorge Araya Navarro]
+
+  Helps with the following error `[ERR] Cannot connect to imap.mail.yahoo.com:993: EOF`
+
+
+1.0.1 (2017-08-31)
+------------------
 
 New
 ~~~
 - Send the IDLE command again after 15 minutes. [Jorge Araya Navarro]
 
   This avoid the server closing the connection
+
+
+1.0 (2017-08-26)
+----------------
+
+New
+~~~
 - Add GPL3+ license to the project. [Jorge Araya Navarro]
 - Add read me file. [Jorge Araya Navarro]
 
