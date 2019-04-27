@@ -36,11 +36,12 @@ The application will use TLS as long as the IMAP server advertises this capabili
 
 ## Usage
 
-    goimapnotify -h
-    Usage of goimapnotify:
-      -conf string
-            Configuration file (default "path/to/imapnotify.conf")
-      -list
-            List all mailboxes and exit
+    Usage of ./goimapnotify:
+    -conf string
+        Configuration file (default "path/to/imapnotify.conf")
+    -debug
+        Output all network activity to the terminal (!! this may leak passwords !!)
+    -list
+        List all mailboxes and exit
 
 As you can notice, `-list` can help you figure out the mailbox hierarchy of your mail server.
