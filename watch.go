@@ -17,87 +17,91 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
-	"log"
-	"os"
-	"time"
+	"sync"
 
-	"github.com/mxk/go-imap/imap"
+	"github.com/emersion/go-imap/client"
+	"github.com/sirupsen/logrus"
 )
+
+type Event int
 
 const (
-	idleduration = 15 * time.Minute
+	FirstStart Event = iota
+	Bye
 )
+
+// IDLEEvent models an IDLE event
+type IDLEEvent struct {
+	Mailbox string
+}
+
+// BoxEvent helps in communication between the box watch launcher and the box
+// watching goroutines
+type BoxEvent struct {
+	Type    Event
+	Mailbox string
+}
 
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
-	c     *imap.Client
-	rsp   *imap.Response
-	event chan<- IDLEEvent
-	quit  <-chan os.Signal
+	client    *IMAPIDLEClient
+	mailbox   string
+	idleEvent chan<- IDLEEvent
+	boxEvent  chan<- BoxEvent
+	done      <-chan struct{}
 }
 
-// NewWatchMailBox create a list of WatchMailBoxes and start them in parallel
-func NewWatchMailBox(conf NotifyConfig, event chan IDLEEvent, quit chan os.Signal, g *guardian) {
-	for _, box := range conf.Boxes {
-		var err error
-		var watch WatchMailBox
-		mailbox := box
-		watch.c = newClient(conf)
+func (w *WatchMailBox) Watch() {
+	updates := make(chan client.Update)
+	done := make(chan error, 1)
 
-		// Include channels
-		watch.quit = quit
-		watch.event = event
-
-		_, err = watch.c.Select(box, true)
-		if err != nil {
-			log.Fatalf("[ERR] Can't SELECT mailbox %s", box)
-		}
-		watch.c.Data = nil
-
-		go func() {
-			g.Add(1)
-			defer g.Done()
-			//nolint
-			defer watch.c.Logout(30 * time.Second)
-			idle, err := watch.c.Idle()
-			if err != nil {
-				log.Fatalf("[ERR] Can't start IDLE command: %s", err)
-			}
-			timer := time.NewTimer(idleduration)
-
-			for idle.InProgress() {
-				select {
-				case <-watch.quit:
-					idle, _ = watch.c.IdleTerm()
-					log.Printf("[INF] Stopping watcher for box %s", mailbox)
-					timer.Stop()
-				case <-timer.C:
-					_, _ = watch.c.IdleTerm()
-					idle, err = watch.c.Idle()
-					if err != nil {
-						log.Fatalf("[ERR] Can't re-start IDLE command: %s", err)
-					}
-					log.Printf("[INF] Restarting IDLE for mailbox: %s\n", mailbox)
-					_ = timer.Reset(idleduration)
-				default:
-					err = watch.c.Recv(1 * time.Second)
-					// Process unilateral server data
-					if err == nil {
-						for _, watch.rsp = range watch.c.Data {
-							// Create events and send them through
-							// the channel
-							var rsp = IDLEEvent{
-								Mailbox:   mailbox,
-								EventType: watch.rsp.Label,
-							}
-							watch.event <- rsp
-						}
-						watch.c.Data = nil
-					}
-
-				}
-			}
-			g.Close(watch.event)
-		}()
+	if _, err := w.client.Select(w.mailbox, true); err != nil {
+		logrus.Fatalf("cannot select mailbox %s, reason: %s", w.mailbox, err)
 	}
+	w.client.Updates = updates
+
+	go func() {
+		logrus.Infof("Watching mailbox %s", w.mailbox)
+		done <- w.client.IdleWithFallback(nil, 0) // 0 = good default
+		_ = w.client.Logout()
+	}()
+
+	// Block and process IDLE events
+	for {
+		select {
+		case update := <-updates:
+			_, ok := update.(*client.MailboxUpdate)
+			if ok {
+				// dispatch IDLE event to the main loop
+				w.idleEvent <- IDLEEvent{Mailbox: w.mailbox}
+			}
+		case <-w.done:
+			// the main event loop is asking us to stop
+			logrus.Warn("Stopping client watching mailbox " + w.mailbox)
+			return
+		case finished := <-done:
+			logrus.Warnf("Done watching mailbox %s", w.mailbox)
+			if finished != nil {
+				w.boxEvent <- BoxEvent{Type: Bye, Mailbox: w.mailbox}
+			}
+			return
+		}
+	}
+}
+
+// NewWatchBox creates a new instance of WatchMailBox and launch it
+func NewWatchBox(c *IMAPIDLEClient, m string, i chan<- IDLEEvent, b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
+	w := WatchMailBox{
+		client:    c,
+		mailbox:   m,
+		idleEvent: i,
+		boxEvent:  b,
+		done:      q,
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		w.Watch()
+	}()
 }

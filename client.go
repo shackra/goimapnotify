@@ -19,49 +19,41 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 
-	"github.com/mxk/go-imap/imap"
+	"github.com/emersion/go-imap-idle"
+	"github.com/emersion/go-imap/client"
 )
 
-func newClient(conf NotifyConfig) *imap.Client {
-	var c *imap.Client
-	var err error
-	if conf.Port == 0 {
-		log.Fatal("[ERR] Port cannot be 0")
-	}
+type IMAPIDLEClient struct {
+	*client.Client
+	*idle.IdleClient
+}
 
+func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	if conf.TLS {
-		c, err = imap.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), &tls.Config{
+		c, err = client.DialTLS(conf.Host+fmt.Sprintf(":%d", conf.Port), &tls.Config{
 			ServerName:         conf.Host,
 			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
 		})
 	} else {
-		c, err = imap.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
+		c, err = client.Dial(conf.Host + fmt.Sprintf(":%d", conf.Port))
 	}
-
 	if err != nil {
-		log.Fatalf("[ERR] Cannot connect to %s:%d: %s", conf.Host, conf.Port, err)
+		return c, err
 	}
 
-	// Enable encryption, if supported by the server
-	_, err = c.StartTLS(&tls.Config{
-		ServerName:         conf.Host,
-		InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
-	})
+	if conf.PasswordCMD != "" {
+		conf = retrievePasswordCmd(conf)
+	}
+	err = c.Login(conf.Username, conf.Password)
 
+	return c, err
+}
+
+func newIMAPIDLEClient(conf NotifyConfig) (c *IMAPIDLEClient, err error) {
+	i, err := newClient(conf)
 	if err != nil {
-		log.Printf("[WARN] Cannot enable STARTTLS: %s", err)
+		return c, err
 	}
-
-	// Authenticate
-	if c.State() == imap.Login {
-		_, err = c.Login(conf.Username, conf.Password)
-	}
-
-	if err != nil {
-		log.Fatalf("[ERR] Can't login to %s with %s: %s", conf.Host, conf.Username, err)
-	}
-	log.Printf("Connected to %s\n", conf.Host)
-	return c
+	return &IMAPIDLEClient{i, idle.NewClient(i)}, nil
 }

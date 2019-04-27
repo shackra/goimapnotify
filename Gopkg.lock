@@ -2,16 +2,83 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:7d826e042ad0de97db48b4d73fda98c35ee414d2f6c99bd980cfc1a34c68b579"
-  name = "github.com/mxk/go-imap"
-  packages = ["imap"]
+  branch = "v1"
+  digest = "1:b214a69ddc746e05b2709ffc5f58d68fb603ae6de11bc3ccf424143064616334"
+  name = "github.com/emersion/go-imap"
+  packages = [
+    ".",
+    "backend",
+    "client",
+    "commands",
+    "responses",
+    "server",
+    "utf7",
+  ]
   pruneopts = "UT"
-  revision = "531c36c3f12d6a03ea766b07a77314aa51ec17f3"
+  revision = "b7db4a2bc5cc04fb568fb036a438da43ee9a9f78"
+
+[[projects]]
+  branch = "master"
+  digest = "1:13ef30fd7e97dd46c8d345e80e10c320c3b0feb13cefe590ed7cc70e9d26b6b6"
+  name = "github.com/emersion/go-imap-idle"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2af93776db6b042cc1116b0d0af00d7f58eea696"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7cc7f47cf4e6f9be30f0e38934f6470cf4c35c9479350bc5e764d3e428018e2e"
+  name = "github.com/emersion/go-sasl"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "7e096a0a6197b89989e8cc31016daa67c8c62051"
+
+[[projects]]
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
+  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:157e5158a7f29d6633eed502880463aa43de3c36d451c7051591efd12f455ac8"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  pruneopts = "UT"
+  revision = "a129542de9ae0895210abff9c95d67a1f33cb93d"
+
+[[projects]]
+  digest = "1:cc38c2209a6c1f94debdfd96934865a258eac2f905a8d3f8fd56e7d0cfb85edd"
+  name = "golang.org/x/text"
+  packages = [
+    "encoding",
+    "encoding/internal/identifier",
+    "internal/gen",
+    "transform",
+    "unicode/cldr",
+  ]
+  pruneopts = "UT"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = ["github.com/mxk/go-imap/imap"]
+  input-imports = [
+    "github.com/emersion/go-imap",
+    "github.com/emersion/go-imap-idle",
+    "github.com/emersion/go-imap/client",
+    "github.com/sirupsen/logrus",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

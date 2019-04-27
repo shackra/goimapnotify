@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // NotifyConfig holds the configuration
@@ -44,71 +44,88 @@ type NotifyConfig struct {
 	Boxes         []string `json:"boxes"`
 }
 
-// IDLEEvent models an IDLE event
-type IDLEEvent struct {
-	Mailbox   string
-	EventType string
-}
-
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
+
 	flag.Parse()
 
 	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
-		log.Fatalf("[ERR] Can't read file: %s", err)
+		logrus.Fatalf("[ERR] Can't read file: %s", err)
 	}
 	var conf NotifyConfig
 	err = json.Unmarshal(raw, &conf)
 	if err != nil {
-		log.Fatalf("Can't parse the configuration: %s", err)
+		logrus.Fatalf("Can't parse the configuration: %s", err)
 	}
 
 	if *list {
-		// walk the mailbox
-		client := newClient(conf)
-		//nolint
-		defer client.Logout(30 * time.Second)
+		client, cErr := newClient(conf)
+		if cErr != nil {
+			logrus.Fatalf("something went wrong creating IMAP client: %s", err)
+		}
+		// nolint
+		defer client.Logout()
+
 		_ = walkMailbox(client, "", 0)
 	} else {
-		// Listen to events
-		events := make(chan IDLEEvent, 1)
+		events := make(chan IDLEEvent)
+		boxEvents := make(chan BoxEvent, 1)
 		quit := make(chan os.Signal, 1)
+		done := make(chan struct{})
 
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-		guard := guardian{
-			mx: &sync.Mutex{},
-			wg: &sync.WaitGroup{},
-		}
+		wg := &sync.WaitGroup{}
 
-		NewWatchMailBox(conf, events, quit, &guard)
-
-		// Send fake-first-run event
-		events <- IDLEEvent{EventType: "EXISTS", Mailbox: "INBOX"}
-
-		// Process incoming events from the mailboxes
-		for rsp := range events {
-			if rsp.EventType == "EXPUNGE" || rsp.EventType == "EXISTS" || rsp.EventType == "RECENT" {
-				cmd := PrepareCommand(conf.OnNewMail, rsp)
-				err := cmd.Run()
-				if err != nil {
-					log.Printf("[ERR] OnNewMail command failed: %s", err)
+		// Send "Good Morning!" event
+		boxEvents <- BoxEvent{Type: FirstStart}
+		run := true
+		for run {
+			select {
+			case box := <-boxEvents:
+				if box.Type == FirstStart {
+					// launch watchers for all mailboxes
+					// listen in "boxes"
+					for _, mailbox := range conf.Boxes {
+						client, iErr := newIMAPIDLEClient(conf)
+						if iErr != nil {
+							logrus.Fatalf("something went wrong creating IDLE client: %s", iErr)
+						}
+						NewWatchBox(client, mailbox, events, boxEvents, done, wg)
+					}
 				} else {
-					// execute the post command thing
-					cmd := PrepareCommand(conf.OnNewMailPost, rsp)
-					err := cmd.Run()
-					if err != nil {
-						log.Printf("[WARN] OnNewMailPost failed: %s", err)
+					logrus.Infof("restarting watcher for mailbox %s", box.Mailbox)
+					client, fErr := newIMAPIDLEClient(conf)
+					if fErr != nil {
+						logrus.Fatalf("something went wrong creating IDLE client: %s", fErr)
+					}
+					NewWatchBox(client, box.Mailbox, events, boxEvents, done, wg)
+				}
+			case <-quit:
+				// OS asked nicely to close, we ask our
+				// goroutines to do the same
+				close(done)
+				run = false
+			case idle := <-events:
+				newmail := PrepareCommand(conf.OnNewMail, idle)
+				dErr := newmail.Run()
+				if dErr != nil {
+					logrus.Errorf("OnNewMail command failed: %s", dErr)
+				} else {
+					newmailpost := PrepareCommand(conf.OnNewMailPost, idle)
+					pErr := newmailpost.Run()
+					if pErr != nil {
+						logrus.Errorf("OnNewMailPost command failed: %s", pErr)
 					}
 				}
 			}
 		}
 
-		log.Println("[INF] Waiting for goroutines to finish...")
-		guard.Wait()
-		log.Println("Bye")
+		logrus.Info("waiting other goroutines to stop...")
+		wg.Wait()
+		logrus.Info("Bye")
 	}
 }

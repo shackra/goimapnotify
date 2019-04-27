@@ -22,27 +22,44 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mxk/go-imap/imap"
+	imap "github.com/emersion/go-imap"
+	"github.com/emersion/go-imap/client"
+	"github.com/sirupsen/logrus"
 )
 
-func walkMailbox(c *imap.Client, b string, l int) error {
-	cmd, err := imap.Wait(c.List(b, "%"))
-	if err != nil {
-		return err
-	}
+func walkMailbox(c *client.Client, b string, l int) error {
+	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
+	go func() {
+		done <- c.List(b, "*", mailboxes)
+	}()
 
-	for pos, rsp := range cmd.Data {
-		box := boxchar(pos, l, len(cmd.Data))
-		fmt.Println(box, filepath.Base(rsp.MailboxInfo().Name))
-		if rsp.MailboxInfo().Attrs["\\Haschildren"] {
-			err = walkMailbox(c, rsp.MailboxInfo().Name+rsp.MailboxInfo().Delim, l+1)
-			if err != nil {
-				log.Printf("[ERR] While walking Mailboxes: %s\n", err)
-				return err
+	pos := 0
+	for m := range mailboxes {
+		box := boxchar(pos, l, len(m.Name))
+		fmt.Println(box, filepath.Base(m.Name))
+		// Check if mailbox has children mailboxes
+		var godown bool
+		for _, attr := range m.Attributes {
+			if attr == "\\Haschildren" {
+				godown = true
+				break
 			}
 		}
+		// if so, go down
+		if godown {
+			bErr := walkMailbox(c, m.Name+m.Delimiter, l+1)
+			if bErr != nil {
+				logrus.Errorf("cannot keep walking mailboxes: %s\n", bErr)
+				return bErr
+			}
+		}
+		pos += 1
 	}
-	return err
+	if err := <-done; err != nil {
+		return err
+	}
+	return nil
 }
 
 func boxchar(p, l, b int) string {
