@@ -19,6 +19,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
 
 	"github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
@@ -40,6 +41,11 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	}
 	if err != nil {
 		return c, err
+	}
+
+	// turn on debugging
+	if conf.Debug {
+		c.SetDebug(os.Stdout)
 	}
 
 	if conf.PasswordCMD != "" {

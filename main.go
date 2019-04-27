@@ -41,6 +41,7 @@ type NotifyConfig struct {
 	PasswordCMD   string   `json:"passwordCmd,omitempty"`
 	OnNewMail     string   `json:"onNewMail"`
 	OnNewMailPost string   `json:"onNewMailPost,omitempty"`
+	Debug         bool     `json:"-"`
 	Boxes         []string `json:"boxes"`
 }
 
@@ -48,6 +49,7 @@ func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
+	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this may leak passwords !!)")
 
 	flag.Parse()
 
@@ -60,6 +62,7 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("Can't parse the configuration: %s", err)
 	}
+	conf.Debug = *debug
 
 	if *list {
 		client, cErr := newClient(conf)
