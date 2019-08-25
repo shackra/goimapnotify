@@ -4,7 +4,7 @@ Execute scripts on IMAP mailbox changes (new/deleted/updated messages) using IDL
 
 Please read the `CHANGELOG` file to know what's new.
 
-This application is compatible with the configuration of [imapnotify made with Python](https://github.com/a-sk/python-imapnotify), the following are all options available for the configuration:
+This application is mostly compatible with the configuration of [imapnotify made with Python](https://github.com/a-sk/python-imapnotify) (be sure to change `password_eval` to `passwordCmd`, see [issue #3](https://gitlab.com/shackra/goimapnotify/issues/3)), the following are all options available for the configuration:
 
     {
       "host": "",
