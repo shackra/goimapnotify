@@ -67,7 +67,7 @@ func main() {
 	if *list {
 		client, cErr := newClient(conf)
 		if cErr != nil {
-			logrus.Fatalf("something went wrong creating IMAP client: %s", err)
+			logrus.Fatalf("something went wrong creating IMAP client: %s", cErr)
 		}
 		// nolint
 		defer client.Logout()

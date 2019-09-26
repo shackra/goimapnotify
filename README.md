@@ -9,6 +9,7 @@ This application is mostly compatible with the configuration of [imapnotify made
     {
       "host": "",
       "port": 143,
+      "tls": false,
       "tlsOptions": {
         "rejectUnauthorized": true
       },
