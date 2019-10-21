@@ -31,6 +31,8 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 
+If your host do not offer IDLE, a sane default of checking every 15 minutes will take place instead.
+
 ## Install
 
     go get -u gitlab.com/shackra/goimapnotify
