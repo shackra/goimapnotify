@@ -2,6 +2,20 @@ Changelog
 =========
 
 
+(unreleased)
+------------
+
+Fix
+~~~
+- Fix misleading description on README.md. [Jorge Javier Araya Navarro]
+
+  fix issue #3
+
+Other
+~~~~~
+- Fix typo, add missing arg to README. [Maxim Baz]
+
+
 2.0 (2019-04-27)
 ----------------
 
@@ -81,5 +95,3 @@ Fix
   Avoid `kill`ing the application because the hang.
 
   http://www.tapirgames.com/blog/golang-channel-closing
-
-
