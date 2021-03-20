@@ -8,12 +8,14 @@ This application is mostly compatible with the configuration of [imapnotify made
 
     {
       "host": "",
+      "hostCmd": "",
       "port": 143,
       "tls": false,
       "tlsOptions": {
         "rejectUnauthorized": true
       },
       "username": "",
+      "usernameCmd": "",
       "password": "",
       "passwordCmd": ""
       "onNewMail": "",
@@ -25,9 +27,11 @@ This application is mostly compatible with the configuration of [imapnotify made
 
 On first start, the application will run `onNewMail` and `onNewMailPost` and then wait for events from your IMAP server.
 
-* `onNewMail`: is an executable or script to run when new mail has arrived.
-* `onNewMailPost`: is an executable or script to run after `onNewMail` has ran.
-* `passwordCmd`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `onNewMail`: is an executable or script to run when new mail has arrived.
+- `onNewMailPost`: is an executable or script to run after `onNewMail` has ran.
+- `hostCmd`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `usernameCmd`: is an executable or script that retrieves your username from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `passwordCmd`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 

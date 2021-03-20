@@ -92,3 +92,33 @@ func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 	}
 	return conf
 }
+
+func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
+	if conf.PasswordCMD != "" {
+		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{})
+		// Avoid leaking the username
+		cmd.Stdout = nil
+		buf, err := cmd.Output()
+		if err == nil {
+			conf.Username = strings.Trim(string(buf[:]), "\n")
+		} else {
+			log.Fatalf("Can't retrieve username from command: %s", err)
+		}
+	}
+	return conf
+}
+
+func retrieveHostCmd(conf NotifyConfig) NotifyConfig {
+	if conf.HostCMD != "" {
+		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{})
+		// Avoid leaking the hostname
+		cmd.Stdout = nil
+		buf, err := cmd.Output()
+		if err == nil {
+			conf.Host = strings.Trim(string(buf[:]), "\n")
+		} else {
+			log.Fatalf("Can't retrieve host from command: %s", err)
+		}
+	}
+	return conf
+}
