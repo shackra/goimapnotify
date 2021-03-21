@@ -4,9 +4,32 @@ Changelog
 
 (unreleased)
 ------------
+- Merge branch 'add_systemd_unit' into 'master' [Jorge Javier Araya
+  Navarro]
+
+  Add systemd unit
+
+  See merge request shackra/goimapnotify!5
+- Add systemd unit. [Cyril Levis]
+- Merge branch 'feat/moreCMD' into 'master' [Jorge Javier Araya Navarro]
+
+  Be able to fetch username and host with a Cmd like passwordCmd
+
+  See merge request shackra/goimapnotify!2
+- Be able to fetch username and host with a Cmd like passwordCmd. [Cyril
+  Levis]
+
+
+2.1 (2021-03-19)
+----------------
+
+New
+~~~
+- Move to go.mod. [Jorge Javier Araya Navarro]
 
 Fix
 ~~~
+- Update Gitlab CI instructions. [Jorge Javier Araya Navarro]
 - Fix misleading description on README.md. [Jorge Javier Araya Navarro]
 
   fix issue #3
@@ -95,3 +118,5 @@ Fix
   Avoid `kill`ing the application because the hang.
 
   http://www.tapirgames.com/blog/golang-channel-closing
+
+
