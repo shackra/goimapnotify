@@ -2,8 +2,25 @@ Changelog
 =========
 
 
-(unreleased)
-------------
+2.2 (2021-04-19)
+----------------
+
+New
+~~~
+- Add support for xoauth2 authentication. [Jorge Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch 'add-xoauth2-support' into 'master' [Jorge Javier Araya
+  Navarro]
+
+  new: Add support for xoauth2 authentication
+
+  See merge request shackra/goimapnotify!6
+
+
+2.1.1 (2021-03-21)
+------------------
 - Merge branch 'add_systemd_unit' into 'master' [Jorge Javier Araya
   Navarro]
 
