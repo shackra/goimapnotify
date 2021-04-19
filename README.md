@@ -17,7 +17,8 @@ This application is mostly compatible with the configuration of [imapnotify made
       "username": "",
       "usernameCmd": "",
       "password": "",
-      "passwordCmd": ""
+      "passwordCmd": "",
+      "xoauth2": false,
       "onNewMail": "",
       "onNewMailPost": "",
       "boxes": [
@@ -32,10 +33,13 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 - `hostCmd`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.
 - `usernameCmd`: is an executable or script that retrieves your username from somewhere, we cannot pass arguments to this command from `Stdin`.
 - `passwordCmd`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `xoauth2`: is an option that allow us to login on your IMAP using OAuth2, **be aware**: the token is retrieve from `passwordCmd`.
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 
 If your host do not offer IDLE, a sane default of checking every 15 minutes will take place instead.
+
+You can also use xoauth2 instead of password based authentication by setting the `xoauth2` option to `true` and the output of a tool which can provide xoauth2 encoded tokens in `passwordCmd`. Examples: [Google oauth2l](https://github.com/google/oauth2l) or [xoauth2 fetcher for O365](https://github.com/harishkrupo/oauth2ms).
 
 ## Install
 
@@ -43,7 +47,7 @@ If your host do not offer IDLE, a sane default of checking every 15 minutes will
 
 ## Usage
 
-    Usage of ./goimapnotify:
+    Usage of goimapnotify:
     -conf string
         Configuration file (default "path/to/imapnotify.conf")
     -debug

@@ -23,6 +23,7 @@ import (
 
 	"github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
+	"github.com/emersion/go-sasl"
 )
 
 type IMAPIDLEClient struct {
@@ -60,7 +61,20 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 		conf = retrievePasswordCmd(conf)
 	}
 
-	err = c.Login(conf.Username, conf.Password)
+	if conf.XOAuth2 {
+		sasl_oauth := &sasl.OAuthBearerOptions{
+			Username: conf.Username,
+			// Use something like https://github.com/google/oauth2l
+			// in your passwordCmd to grab the token as a password
+			Token: conf.Password,
+			Host:  conf.Host,
+			Port:  conf.Port,
+		}
+		sasl_client := sasl.NewOAuthBearerClient(sasl_oauth)
+		err = c.Authenticate(sasl_client)
+	} else {
+		err = c.Login(conf.Username, conf.Password)
+	}
 
 	return c, err
 }
