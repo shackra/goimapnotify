@@ -28,26 +28,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// NotifyConfig holds the configuration
-type NotifyConfig struct {
-	Host       string `json:"host"`
-	HostCMD    string `json:"hostCmd,omitempty"`
-	Port       int    `json:"port"`
-	TLS        bool   `json:"tls,omitempty"`
-	TLSOptions struct {
-		RejectUnauthorized bool `json:"reject_unauthorized"`
-	} `json:"tlsOption"`
-	Username      string   `json:"username"`
-	UsernameCMD   string   `json:"usernameCmd,omitempty"`
-	Password      string   `json:"password"`
-	PasswordCMD   string   `json:"passwordCmd,omitempty"`
-	XOAuth2       bool     `json:"xoauth2"`
-	OnNewMail     string   `json:"onNewMail"`
-	OnNewMailPost string   `json:"onNewMailPost,omitempty"`
-	Debug         bool     `json:"-"`
-	Boxes         []string `json:"boxes"`
-}
-
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
@@ -81,6 +61,11 @@ func main() {
 		boxEvents := make(chan BoxEvent, 1)
 		quit := make(chan os.Signal, 1)
 		done := make(chan struct{})
+		runningBoxes := &RunningBox{
+			boxes: []string{},
+			m:     &sync.RWMutex{},
+			debug: conf.Debug,
+		}
 
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -116,17 +101,7 @@ func main() {
 				close(done)
 				run = false
 			case idle := <-events:
-				newmail := PrepareCommand(conf.OnNewMail, idle)
-				dErr := newmail.Run()
-				if dErr != nil {
-					logrus.Errorf("OnNewMail command failed: %s", dErr)
-				} else {
-					newmailpost := PrepareCommand(conf.OnNewMailPost, idle)
-					pErr := newmailpost.Run()
-					if pErr != nil {
-						logrus.Errorf("OnNewMailPost command failed: %s", pErr)
-					}
-				}
+				runningBoxes.RunOrIgnore(conf.OnNewMail, conf.OnNewMailPost, idle)
 			}
 		}
 

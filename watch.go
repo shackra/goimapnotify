@@ -70,8 +70,8 @@ func (w *WatchMailBox) Watch() {
 	for {
 		select {
 		case update := <-updates:
-			_, ok := update.(*client.MailboxUpdate)
-			if ok {
+			m, ok := update.(*client.MailboxUpdate)
+			if ok && m.Mailbox.Messages > 0 {
 				// dispatch IDLE event to the main loop
 				w.idleEvent <- IDLEEvent{Mailbox: w.mailbox}
 			}
