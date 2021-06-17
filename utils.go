@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2019  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"path/filepath"
 	"strings"
 
 	imap "github.com/emersion/go-imap"
@@ -27,7 +26,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func printDelimiter(c *client.Client) {
+	mailboxes := make(chan *imap.MailboxInfo, 10)
+	go func() {
+		c.List("", "*", mailboxes)
+	}()
+
+	m := <-mailboxes
+
+	fmt.Println("Hierarchy delimiter is:", m.Delimiter)
+}
+
 func walkMailbox(c *client.Client, b string, l int) error {
+	// FIXME: This can be done better
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	done := make(chan error, 1)
 	go func() {
@@ -37,24 +48,19 @@ func walkMailbox(c *client.Client, b string, l int) error {
 	pos := 0
 	for m := range mailboxes {
 		box := boxchar(pos, l, len(m.Name))
-		fmt.Println(box, filepath.Base(m.Name))
+		fmt.Println(box, m.Name)
+		pos += 1
 		// Check if mailbox has children mailboxes
-		var godown bool
 		for _, attr := range m.Attributes {
 			if attr == "\\Haschildren" {
-				godown = true
+				err := walkMailbox(c, m.Name, l+1)
+				if err != nil {
+					logrus.Errorf("cannot keep walking mailboxes: %s\n", err)
+					return err
+				}
 				break
 			}
 		}
-		// if so, go down
-		if godown {
-			bErr := walkMailbox(c, m.Name+m.Delimiter, l+1)
-			if bErr != nil {
-				logrus.Errorf("cannot keep walking mailboxes: %s\n", bErr)
-				return bErr
-			}
-		}
-		pos += 1
 	}
 	if err := <-done; err != nil {
 		return err
@@ -71,10 +77,12 @@ func boxchar(p, l, b int) string {
 		drawthis = "┌─"
 	case p > 0 && p < b:
 		drawthis = "├─"
-	}
-	if l > 0 {
+	case l > 0:
 		drawthis = "│" + strings.Repeat(" ", l) + drawthis
+	default:
+		drawthis = "├─"
 	}
+
 	return drawthis
 }
 

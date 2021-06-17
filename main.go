@@ -55,6 +55,7 @@ func main() {
 		// nolint
 		defer client.Logout()
 
+		printDelimiter(client)
 		_ = walkMailbox(client, "", 0)
 	} else {
 		events := make(chan IDLEEvent)
