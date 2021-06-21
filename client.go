@@ -62,16 +62,34 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	}
 
 	if conf.XOAuth2 {
-		sasl_oauth := &sasl.OAuthBearerOptions{
-			Username: conf.Username,
-			// Use something like https://github.com/google/oauth2l
-			// in your passwordCmd to grab the token as a password
-			Token: conf.Password,
-			Host:  conf.Host,
-			Port:  conf.Port,
+		okBearer, err := c.SupportAuth(sasl.OAuthBearer)
+		if err != nil {
+			return nil, CannotCheckSupportedAuthErr
 		}
-		sasl_client := sasl.NewOAuthBearerClient(sasl_oauth)
-		err = c.Authenticate(sasl_client)
+		okXOAuth2, err := c.SupportAuth(Xoauth2)
+		if err != nil {
+			return nil, CannotCheckSupportedAuthErr
+		}
+
+		if !okXOAuth2 && !okBearer {
+			return nil, TokenAuthNotSupportedErr
+		}
+
+		if okBearer {
+			sasl_oauth := &sasl.OAuthBearerOptions{
+				Username: conf.Username,
+				// Use something like https://github.com/google/oauth2l
+				// in your passwordCmd to grab the token as a password
+				Token: conf.Password,
+				Host:  conf.Host,
+				Port:  conf.Port,
+			}
+			sasl_client := sasl.NewOAuthBearerClient(sasl_oauth)
+			err = c.Authenticate(sasl_client)
+		} else if okXOAuth2 {
+			sasl_xoauth2 := NewXoauth2Client(conf.Username, conf.Password)
+			err = c.Authenticate(sasl_xoauth2)
+		}
 	} else {
 		err = c.Login(conf.Username, conf.Password)
 	}
