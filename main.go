@@ -62,11 +62,7 @@ func main() {
 		boxEvents := make(chan BoxEvent, 1)
 		quit := make(chan os.Signal, 1)
 		done := make(chan struct{})
-		runningBoxes := &RunningBox{
-			boxes: []string{},
-			m:     &sync.RWMutex{},
-			debug: conf.Debug,
-		}
+		runningBoxes := NewRunningBox(conf.Wait, conf.Debug)
 
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 

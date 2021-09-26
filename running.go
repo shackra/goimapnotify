@@ -1,39 +1,63 @@
 package main
 
 import (
-	"sync"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	tag = "mail sync job"
+)
+
 type RunningBox struct {
-	boxes []string
-	m     *sync.RWMutex
-	debug bool
+	wait       int
+	scheduler  *gocron.Scheduler
+	debug      bool
+	currentJob *gocron.Job
+	timeOfJon  time.Time
+}
+
+func NewRunningBox(wait int, debug bool) *RunningBox {
+	r := &RunningBox{
+		wait:      wait,
+		scheduler: gocron.NewScheduler(time.UTC),
+		debug:     debug,
+	}
+
+	// makes tags unique
+	r.scheduler.TagsUnique()
+	// start scheduler asynchronously
+	r.scheduler.StartAsync()
+
+	return r
 }
 
 func (r *RunningBox) RunOrIgnore(nm, nmp string, rsp IDLEEvent) {
-	result := r.isBoxRunning(rsp)
-	if result == -1 {
-		r.m.Lock()
-		defer r.m.Unlock()
-		if r.debug {
-			logrus.Infof("locking mailbox %s", rsp.Mailbox)
+	if r.currentJob != nil {
+		// "restart" the job
+		// This may not work as expected if the job was already started
+		r.scheduler.Remove(r.currentJob)
+		if time.Now().Before(r.timeOfJon) {
+			logrus.Infof("scheduled job (hopefully) removed (expected to run at %s)", r.timeOfJon.Format(time.RFC850))
 		}
-		r.boxes = append(r.boxes, rsp.Mailbox)
+	}
+	var err error
+	r.currentJob, err = r.scheduler.Every(r.wait).Seconds().LimitRunsTo(1).Tag(tag).SingletonMode().Do(func() {
+		logrus.Infof("running mail synchronization scheduled for %s", r.timeOfJon.Format(time.RFC850))
+		r.run(nm, nmp, rsp)
+	})
+	r.timeOfJon = time.Now().Add(time.Duration(r.wait) * time.Second)
 
-		// execute commands for the Mailbox with an update
-		go r.run(nm, nmp, rsp)
-	} else if r.debug {
-		logrus.Warnf("ignoring executing onNewMail & onNewMailPost commands for mailbox %s", rsp.Mailbox)
+	if err != nil {
+		logrus.Errorf("error when scheduling mail sync: %s", err)
+	} else {
+		logrus.Infof("mail synchronization job schedule to run in %d second(s) or at %s", r.wait, r.timeOfJon.Format(time.RFC850))
 	}
 }
 
 func (r *RunningBox) run(nm, nmp string, rsp IDLEEvent) {
-	// remove the Mailbox name from the list after completing the execution of
-	// the system commands
-	defer r.freeBox(rsp)
-
 	newmail := PrepareCommand(nm, rsp)
 	dErr := newmail.Run()
 	if dErr != nil {
@@ -44,29 +68,5 @@ func (r *RunningBox) run(nm, nmp string, rsp IDLEEvent) {
 		if pErr != nil {
 			logrus.Errorf("OnNewMailPost command failed: %s", pErr)
 		}
-	}
-}
-
-func (r *RunningBox) isBoxRunning(rsp IDLEEvent) int {
-	for index, box := range r.boxes {
-		if box == rsp.Mailbox {
-			return index
-		}
-	}
-	return -1
-}
-
-func (r *RunningBox) freeBox(rsp IDLEEvent) {
-	index := r.isBoxRunning(rsp)
-	r.m.Lock()
-	defer r.m.Unlock()
-
-	if r.debug {
-		logrus.Infof("releasing mailbox %s", rsp.Mailbox)
-	}
-
-	if index > -1 {
-		r.boxes[len(r.boxes)-1], r.boxes[index] = r.boxes[index], r.boxes[len(r.boxes)-1]
-		r.boxes = r.boxes[:len(r.boxes)-1]
 	}
 }
