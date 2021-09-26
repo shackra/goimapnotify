@@ -21,6 +21,7 @@ This application is mostly compatible with the configuration of [imapnotify made
       "xoauth2": false,
       "onNewMail": "",
       "onNewMailPost": "",
+      "wait": 20,
       "boxes": [
         "INBOX"
       ]
@@ -33,7 +34,8 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 - `hostCmd`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.
 - `usernameCmd`: is an executable or script that retrieves your username from somewhere, we cannot pass arguments to this command from `Stdin`.
 - `passwordCmd`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.
-- `xoauth2`: is an option that allow us to login on your IMAP using OAuth2, **be aware**: the token is retrieve from `passwordCmd`.
+- `xoauth2`: is an option that allow us to login on your IMAP using OAuth2, **be aware**: the token is retrieve from `passwordCmd` (see shackra/goimapnotify#9).
+- `wait`: is the delay in seconds before the mail syncing is trigger (see shackra/goimapnotify#10).
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 
