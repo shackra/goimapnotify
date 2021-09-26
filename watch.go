@@ -75,6 +75,11 @@ func (w *WatchMailBox) Watch() {
 				// dispatch IDLE event to the main loop
 				w.idleEvent <- IDLEEvent{Mailbox: w.mailbox}
 			}
+			// message deleted
+			_, ok = update.(*client.ExpungeUpdate)
+			if ok {
+				w.idleEvent <- IDLEEvent{Mailbox: w.mailbox}
+			}
 		case <-w.done:
 			// the main event loop is asking us to stop
 			logrus.Warn("Stopping client watching mailbox " + w.mailbox)

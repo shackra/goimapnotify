@@ -16,6 +16,7 @@ type NotifyConfig struct {
 	XOAuth2       bool     `json:"xoauth2"`
 	OnNewMail     string   `json:"onNewMail"`
 	OnNewMailPost string   `json:"onNewMailPost,omitempty"`
+	Wait          int      `json:"wait"`
 	Debug         bool     `json:"-"`
 	Boxes         []string `json:"boxes"`
 }
