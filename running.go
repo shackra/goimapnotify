@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/go-co-op/gocron"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,61 +12,74 @@ var (
 )
 
 type RunningBox struct {
-	wait       int
-	scheduler  *gocron.Scheduler
-	debug      bool
-	currentJob *gocron.Job
-	timeOfJon  time.Time
+	wait        int
+	debug       bool
+	ignoreCalls bool
+	timer       *time.Timer
+	timeOfJob   time.Time
 }
 
 func NewRunningBox(wait int, debug bool) *RunningBox {
-	r := &RunningBox{
-		wait:      wait,
-		scheduler: gocron.NewScheduler(time.UTC),
-		debug:     debug,
+	return &RunningBox{
+		wait:  wait,
+		debug: debug,
 	}
-
-	// makes tags unique
-	r.scheduler.TagsUnique()
-	// start scheduler asynchronously
-	r.scheduler.StartAsync()
-
-	return r
 }
 
 func (r *RunningBox) RunOrIgnore(nm, nmp string, rsp IDLEEvent) {
-	if r.currentJob != nil {
-		// "restart" the job
-		// This may not work as expected if the job was already started
-		r.scheduler.Remove(r.currentJob)
-		if time.Now().Before(r.timeOfJon) {
-			logrus.Infof("scheduled job (hopefully) removed (expected to run at %s)", r.timeOfJon.Format(time.RFC850))
+	wait := time.Duration(r.wait) * time.Second
+	newSchedule := time.Now().Add(wait)
+	oldTime := r.timeOfJob
+
+	messageReschedule := fmt.Sprintf("re-scheduling syncing from %s to %s (%s in the future)", oldTime.Format(time.RFC850), newSchedule.Format(time.RFC850), wait)
+	messageScheduled := fmt.Sprintf("syncing scheduled for %s (%s from now)", newSchedule.Format(time.RFC850), wait)
+
+	if r.timer == nil {
+		r.timer = time.AfterFunc(wait, func() {
+			r.run(nm, nmp, rsp)
+		})
+		logrus.Infoln(messageScheduled)
+	} else if !r.ignoreCalls {
+		// syncing is not running, reset timer
+
+		// "For a Timer created with AfterFunc(d, f), Reset either reschedules
+		// when f will run, in which case Reset returns true, or schedules f to
+		// run again, in which case it returns false."
+		rescheduled := r.timer.Reset(wait)
+		r.timeOfJob = newSchedule
+		if rescheduled {
+			logrus.Infoln(messageReschedule)
+		} else {
+			logrus.Infoln(messageScheduled)
 		}
 	}
-	var err error
-	r.currentJob, err = r.scheduler.Every(r.wait).Seconds().LimitRunsTo(1).Tag(tag).SingletonMode().Do(func() {
-		logrus.Infof("running mail synchronization scheduled for %s", r.timeOfJon.Format(time.RFC850))
-		r.run(nm, nmp, rsp)
-	})
-	r.timeOfJon = time.Now().Add(time.Duration(r.wait) * time.Second)
 
-	if err != nil {
-		logrus.Errorf("error when scheduling mail sync: %s", err)
-	} else {
-		logrus.Infof("mail synchronization job schedule to run in %d second(s) or at %s", r.wait, r.timeOfJon.Format(time.RFC850))
+	if r.ignoreCalls {
+		logrus.Warningf("Ignoring this request, scheduled job for %s is running", r.timeOfJob.Format(time.RFC850))
 	}
 }
 
 func (r *RunningBox) run(nm, nmp string, rsp IDLEEvent) {
-	newmail := PrepareCommand(nm, rsp)
-	dErr := newmail.Run()
-	if dErr != nil {
-		logrus.Errorf("OnNewMail command failed: %s", dErr)
+	r.ignoreCalls = true
+	defer func() {
+		// turn off the flag
+		r.ignoreCalls = false
+	}()
+
+	if r.debug {
+		logrus.Infoln("running sinchronization...")
+	}
+
+	newmail := PrepareCommand(nm, rsp, r.debug)
+	newmailpost := PrepareCommand(nmp, rsp, r.debug)
+
+	err := newmail.Run()
+	if err != nil {
+		logrus.Errorf("OnNewMail command failed: %s", err)
 	} else {
-		newmailpost := PrepareCommand(nmp, rsp)
-		pErr := newmailpost.Run()
-		if pErr != nil {
-			logrus.Errorf("OnNewMailPost command failed: %s", pErr)
+		err = newmailpost.Run()
+		if err != nil {
+			logrus.Errorf("OnNewMailPost command failed: %s", err)
 		}
 	}
 }

@@ -88,7 +88,7 @@ func boxchar(p, l, b int) string {
 
 func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 	if conf.PasswordCMD != "" {
-		cmd := PrepareCommand(conf.PasswordCMD, IDLEEvent{})
+		cmd := PrepareCommand(conf.PasswordCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the password
 		cmd.Stdout = nil
 		buf, err := cmd.Output()
@@ -103,7 +103,7 @@ func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 
 func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
 	if conf.PasswordCMD != "" {
-		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{})
+		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the username
 		cmd.Stdout = nil
 		buf, err := cmd.Output()
@@ -118,7 +118,7 @@ func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
 
 func retrieveHostCmd(conf NotifyConfig) NotifyConfig {
 	if conf.HostCMD != "" {
-		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{})
+		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the hostname
 		cmd.Stdout = nil
 		buf, err := cmd.Output()
