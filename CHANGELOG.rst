@@ -2,6 +2,103 @@ Changelog
 =========
 
 
+2.3.4 (2021-09-28)
+------------------
+- Merge branch '12-shell-command-is-not-executed-with-2-3-3-version'
+  into 'master' [Jorge Javier Araya Navarro]
+
+  Resolve "Shell command is not executed with 2.3.3 version"
+
+  Closes #12
+
+  See merge request shackra/goimapnotify!10
+- Resolve "Shell command is not executed with 2.3.3 version" [Jorge
+  Javier Araya Navarro]
+
+
+2.3.3 (2021-09-26)
+------------------
+
+Changes
+~~~~~~~
+- Update years. [Jorge Javier Araya Navarro]
+- Update readme. [Jorge Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch 'master' of gitlab.com:shackra/goimapnotify. [Jorge
+  Javier Araya Navarro]
+- Merge branch '10-fetcher-is-triggered-many-times-in-quick-succession-
+  if-multiple-mails-arrive-at-the-same-time' into 'master' [Jorge Javier
+  Araya Navarro]
+
+  Resolve "Fetcher is triggered many times in quick succession if multiple mails arrive at the same time"
+
+  Closes #10
+
+  See merge request shackra/goimapnotify!9
+- Resolve "Fetcher is triggered many times in quick succession if
+  multiple mails arrive at the same time" [Jorge Javier Araya Navarro]
+
+
+2.3.2 (2021-06-21)
+------------------
+
+Fix
+~~~
+- Resolve "xoauth2 not working as expected" [Jorge Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch '9-xoauth2-not-working-as-expected' into 'master' [Jorge
+  Javier Araya Navarro]
+
+  fix: Resolve "xoauth2 not working as expected"
+
+  Closes #9
+
+  See merge request shackra/goimapnotify!8
+
+
+2.3.1 (2021-06-17)
+------------------
+
+Fix
+~~~
+- Resolve "Unable to specify 'sub-boxes'" [Jorge Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch '8-unable-to-specify-sub-boxes' into 'master' [Jorge
+  Javier Araya Navarro]
+
+  Resolve "Unable to specify 'sub-boxes'"
+
+  Closes #8
+
+  See merge request shackra/goimapnotify!7
+
+
+2.3 (2021-05-25)
+----------------
+
+Fix
+~~~
+- Prevent multiple calls of `onNewMail` and `onNewMailPost` [Jorge
+  Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch 'fix/shackra/goimapnotify#4' into 'master' [Jorge Javier
+  Araya Navarro]
+
+  fix: Prevent multiple calls of `onNewMail` and `onNewMailPost`
+
+  Closes #4
+
+  See merge request shackra/goimapnotify!4
+
+
 2.2 (2021-04-19)
 ----------------
 
