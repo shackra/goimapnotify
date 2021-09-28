@@ -1,9 +1,9 @@
-// +build !windows
+//go:build !windows
 
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2019  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,14 +20,15 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // PrepareCommand parse a string and return a command executable by Go
-func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
+func PrepareCommand(command string, rsp IDLEEvent, printCommand bool) *exec.Cmd {
 	var commandstr string
 	if strings.Contains(command, "%s") {
 		commandstr = fmt.Sprintf(command, rsp.Mailbox)
@@ -36,7 +37,9 @@ func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
 	}
 
 	commandsplt := append([]string{"sh", "-c"}, commandstr)
-	log.Printf("[DBG] Command: %s", strings.Join(commandsplt, " "))
+	if printCommand {
+		logrus.Infof("Command: %s", strings.Join(commandsplt, " "))
+	}
 	// #nosec
 	cmd := exec.Command(commandsplt[0], commandsplt[1:]...)
 	cmd.Stdout = os.Stdout
