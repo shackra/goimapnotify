@@ -84,6 +84,7 @@ func main() {
 						}
 						NewWatchBox(client, mailbox, events, boxEvents, done, wg)
 					}
+					runningBoxes.RunOrIgnore(conf.OnNewMail, conf.OnNewMailPost, IDLEEvent{})
 				} else {
 					logrus.Infof("restarting watcher for mailbox %s", box.Mailbox)
 					client, fErr := newIMAPIDLEClient(conf)
