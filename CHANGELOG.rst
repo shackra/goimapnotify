@@ -2,6 +2,33 @@ Changelog
 =========
 
 
+2.3.6 (2021-09-29)
+------------------
+
+Fix
+~~~
+- Add +build tag. [Jorge Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch '13-2-3-5-uses-go-build-without-a-build-comment' into
+  'master' [Jorge Javier Araya Navarro]
+
+  Resolve "2.3.5 uses go:build without a +build comment"
+
+  Closes #13
+
+  See merge request shackra/goimapnotify!11
+
+
+2.3.5 (2021-09-28)
+------------------
+
+Fix
+~~~
+- Ensure that sync happens upon starting. [Jorge Javier Araya Navarro]
+
+
 2.3.4 (2021-09-28)
 ------------------
 - Merge branch '12-shell-command-is-not-executed-with-2-3-3-version'
