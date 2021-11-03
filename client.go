@@ -32,10 +32,6 @@ type IMAPIDLEClient struct {
 }
 
 func newClient(conf NotifyConfig) (c *client.Client, err error) {
-	if conf.HostCMD != "" {
-		conf = retrieveHostCmd(conf)
-	}
-
 	if conf.TLS {
 		c, err = client.DialTLS(conf.Host+fmt.Sprintf(":%d", conf.Port), &tls.Config{
 			ServerName:         conf.Host,
@@ -51,14 +47,6 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	// turn on debugging
 	if conf.Debug {
 		c.SetDebug(os.Stdout)
-	}
-
-	if conf.UsernameCMD != "" {
-		conf = retrieveUsernameCmd(conf)
-	}
-
-	if conf.PasswordCMD != "" {
-		conf = retrievePasswordCmd(conf)
 	}
 
 	if conf.XOAuth2 {

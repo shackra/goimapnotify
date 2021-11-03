@@ -102,7 +102,7 @@ func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 }
 
 func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
-	if conf.PasswordCMD != "" {
+	if conf.UsernameCMD != "" {
 		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the username
 		cmd.Stdout = nil
@@ -129,4 +129,28 @@ func retrieveHostCmd(conf NotifyConfig) NotifyConfig {
 		}
 	}
 	return conf
+}
+
+func retrieveCmd(conf NotifyConfig) NotifyConfig {
+	if conf.PasswordCMD != "" {
+		conf = retrievePasswordCmd(conf)
+	}
+	if conf.UsernameCMD != "" {
+		conf = retrieveUsernameCmd(conf)
+	}
+	if conf.HostCMD != "" {
+		conf = retrieveHostCmd(conf)
+	}
+	return conf
+}
+
+func setFromConfig(conf NotifyConfig, box Box) Box {
+	if box.OnNewMail == "" {
+		box.OnNewMail = conf.OnNewMail
+	}
+	if box.OnNewMailPost == "" {
+		box.OnNewMailPost = conf.OnNewMailPost
+	}
+    box.Alias = conf.Alias
+	return box
 }

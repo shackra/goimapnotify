@@ -23,29 +23,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Event int
-
-const (
-	FirstStart Event = iota
-	Bye
-)
-
 // IDLEEvent models an IDLE event
-type IDLEEvent struct {
-	Mailbox string
-}
+type IDLEEvent = Box
 
 // BoxEvent helps in communication between the box watch launcher and the box
 // watching goroutines
 type BoxEvent struct {
-	Type    Event
-	Mailbox string
+	Conf    NotifyConfig
+	Mailbox Box
 }
 
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
 	client    *IMAPIDLEClient
-	mailbox   string
+	conf      NotifyConfig
+	box       Box
 	idleEvent chan<- IDLEEvent
 	boxEvent  chan<- BoxEvent
 	done      <-chan struct{}
@@ -55,13 +47,16 @@ func (w *WatchMailBox) Watch() {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
-	if _, err := w.client.Select(w.mailbox, true); err != nil {
-		logrus.Fatalf("cannot select mailbox %s, reason: %s", w.mailbox, err)
+	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
+		logrus.Fatalf("[%s:%s] Cannot select mailbox: %s",
+		              w.box.Alias,
+		              w.box.Mailbox,
+		              err)
 	}
 	w.client.Updates = updates
 
 	go func() {
-		logrus.Infof("Watching mailbox %s", w.mailbox)
+		logrus.Infof("[%s:%s] Watching mailbox", w.box.Alias, w.box.Mailbox)
 		done <- w.client.IdleWithFallback(nil, 0) // 0 = good default
 		_ = w.client.Logout()
 	}()
@@ -73,21 +68,25 @@ func (w *WatchMailBox) Watch() {
 			m, ok := update.(*client.MailboxUpdate)
 			if ok && m.Mailbox.Messages > 0 {
 				// dispatch IDLE event to the main loop
-				w.idleEvent <- IDLEEvent{Mailbox: w.mailbox}
+				w.idleEvent <- w.box
 			}
 			// message deleted
 			_, ok = update.(*client.ExpungeUpdate)
 			if ok {
-				w.idleEvent <- IDLEEvent{Mailbox: w.mailbox}
+				w.idleEvent <- w.box
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
-			logrus.Warn("Stopping client watching mailbox " + w.mailbox)
+			logrus.Warnf("[%s:%s] Stopping client watching mailbox",
+			             w.box.Alias,
+			             w.box.Mailbox)
 			return
 		case finished := <-done:
-			logrus.Warnf("Done watching mailbox %s", w.mailbox)
+			logrus.Warnf("[%s:%s] Done watching mailbox",
+			             w.box.Alias,
+			             w.box.Mailbox)
 			if finished != nil {
-				w.boxEvent <- BoxEvent{Type: Bye, Mailbox: w.mailbox}
+				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}
 			return
 		}
@@ -95,10 +94,12 @@ func (w *WatchMailBox) Watch() {
 }
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
-func NewWatchBox(c *IMAPIDLEClient, m string, i chan<- IDLEEvent, b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
+func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
+                 b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
 	w := WatchMailBox{
 		client:    c,
-		mailbox:   m,
+		conf:      f,
+		box:       m,
 		idleEvent: i,
 		boxEvent:  b,
 		done:      q,

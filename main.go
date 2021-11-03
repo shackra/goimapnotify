@@ -33,77 +33,104 @@ func main() {
 	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this may leak passwords !!)")
+	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
 
 	flag.Parse()
 
 	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
-		logrus.Fatalf("[ERR] Can't read file: %s", err)
+		logrus.Fatalf("Can't read file: %s", err)
 	}
-	var conf NotifyConfig
-	err = json.Unmarshal(raw, &conf)
+	var config []NotifyConfig
+	err = json.Unmarshal(raw, &config)
 	if err != nil {
-		logrus.Fatalf("Can't parse the configuration: %s", err)
-	}
-	conf.Debug = *debug
-
-	if *list {
-		client, cErr := newClient(conf)
-		if cErr != nil {
-			logrus.Fatalf("something went wrong creating IMAP client: %s", cErr)
+		var configLegacy NotifyConfigLegacy
+		err = json.Unmarshal(raw, &configLegacy)
+		if err != nil {
+			logrus.Fatalf("Can't parse the configuration: %s", err)
+		} else {
+			logrus.Warnf("Legacy configuration format detected")
+			config = legacyConverter(configLegacy)
 		}
-		// nolint
-		defer client.Logout()
+	}
 
-		printDelimiter(client)
-		_ = walkMailbox(client, "", 0)
-	} else {
-		events := make(chan IDLEEvent)
-		boxEvents := make(chan BoxEvent, 1)
-		quit := make(chan os.Signal, 1)
-		done := make(chan struct{})
-		runningBoxes := NewRunningBox(conf.Wait, conf.Debug)
+	idleChan := make(chan IDLEEvent)
+	boxChan := make(chan BoxEvent, 1)
+	quit := make(chan os.Signal, 1)
+	doneChan := make(chan struct{})
+	running := NewRunningBox(*debug, *wait)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	wg := &sync.WaitGroup{}
 
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	// indexes used because we need to change struct data
+	for i := range config {
+		config[i] = retrieveCmd(config[i])
+		config[i].Debug = *debug
+		if config[i].Alias == "" {
+			config[i].Alias = config[i].Username
+		}
 
-		wg := &sync.WaitGroup{}
+		if *list {
+			client, cErr := newClient(config[i])
+			if cErr != nil {
+				logrus.Fatalf("[%s] Something went wrong creating IMAP client: %s", 
+				              config[i].Alias, cErr)
+			}
+			// nolint
+			defer client.Logout()
 
-		// Send "Good Morning!" event
-		boxEvents <- BoxEvent{Type: FirstStart}
-		run := true
-		for run {
-			select {
-			case box := <-boxEvents:
-				if box.Type == FirstStart {
-					// launch watchers for all mailboxes
-					// listen in "boxes"
-					for _, mailbox := range conf.Boxes {
-						client, iErr := newIMAPIDLEClient(conf)
-						if iErr != nil {
-							logrus.Fatalf("something went wrong creating IDLE client: %s", iErr)
-						}
-						NewWatchBox(client, mailbox, events, boxEvents, done, wg)
-					}
-				} else {
-					logrus.Infof("restarting watcher for mailbox %s", box.Mailbox)
-					client, fErr := newIMAPIDLEClient(conf)
-					if fErr != nil {
-						logrus.Fatalf("something went wrong creating IDLE client: %s", fErr)
-					}
-					NewWatchBox(client, box.Mailbox, events, boxEvents, done, wg)
+			printDelimiter(client)
+			_ = walkMailbox(client, "", 0)
+		} else {
+			// launch watchers for all mailboxes
+			// listen in "boxes"
+
+			for j := range config[i].Boxes {
+				/*
+				 * Copy default names if empty. Use SKIP to skip execution
+				 * The check is happening in running.go:run
+				 */
+				config[i].Boxes[j] = setFromConfig(config[i], config[i].Boxes[j])
+				client, iErr := newIMAPIDLEClient(config[i])
+				if iErr != nil {
+					logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s", 
+					              config[i].Boxes[j].Alias, config[i].Boxes[j].Mailbox, iErr)
 				}
-			case <-quit:
-				// OS asked nicely to close, we ask our
-				// goroutines to do the same
-				close(done)
-				run = false
-			case idle := <-events:
-				runningBoxes.RunOrIgnore(conf.OnNewMail, conf.OnNewMailPost, idle)
+				NewWatchBox(client, config[i], config[i].Boxes[j],
+				            idleChan, boxChan, doneChan, wg)
 			}
 		}
-
-		logrus.Info("waiting other goroutines to stop...")
-		wg.Wait()
-		logrus.Info("Bye")
 	}
+	run := true
+	if *list {
+		run = false
+	}
+	for run {
+		select {
+		case boxEvent := <-boxChan:
+			logrus.Infof("[%s:%s] Restarting watcher for mailbox",
+			             boxEvent.Mailbox.Alias, boxEvent.Mailbox.Mailbox)
+			client, fErr := newIMAPIDLEClient(boxEvent.Conf)
+			if fErr != nil {
+				logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s", 
+				              boxEvent.Mailbox.Alias, boxEvent.Mailbox.Mailbox, fErr)
+			}
+			NewWatchBox(client, boxEvent.Conf, boxEvent.Mailbox,
+			            idleChan, boxChan, doneChan, wg)
+		case <-quit:
+			// OS asked nicely to close, we ask our
+			// goroutines to do the same
+			close(doneChan)
+			run = false
+		case idleEvent := <-idleChan:
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				running.schedule(idleEvent, doneChan)
+			}()
+		}
+	}
+	logrus.Info("Waiting other goroutines to stop...")
+	wg.Wait()
+	logrus.Info("Bye")
 }

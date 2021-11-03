@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/sirupsen/logrus"
 	"fmt"
 	"time"
-
-	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 var (
@@ -12,74 +12,101 @@ var (
 )
 
 type RunningBox struct {
-	wait        int
-	debug       bool
-	ignoreCalls bool
-	timer       *time.Timer
-	timeOfJob   time.Time
+	debug bool
+	wait  int
+	/*
+	 * Use map to create a different timer for each
+	 * username-mailbox combination
+	 */
+	timer map[string]*time.Timer
+	mutex map[string]*sync.RWMutex
 }
 
-func NewRunningBox(wait int, debug bool) *RunningBox {
+func NewRunningBox(debug bool, wait int) *RunningBox {
 	return &RunningBox{
-		wait:  wait,
 		debug: debug,
+		wait: wait,
+		timer: make(map[string]*time.Timer),
+		mutex: make(map[string]*sync.RWMutex),
 	}
 }
 
-func (r *RunningBox) RunOrIgnore(nm, nmp string, rsp IDLEEvent) {
+func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
+
+	if (rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "") {
+		logrus.Infof("[%s:%s] No scripts to be executed. Skipping..",
+		             rsp.Alias,
+		             rsp.Mailbox)
+		return
+	}
+	key := rsp.Alias + rsp.Mailbox
 	wait := time.Duration(r.wait) * time.Second
-	newSchedule := time.Now().Add(wait)
-	oldTime := r.timeOfJob
+	format := fmt.Sprintf("[%s:%s] %%s syncing for %s (%s in the future)",
+	                      rsp.Alias,
+	                      rsp.Mailbox,
+	                      time.Now().Add(wait).Format(time.RFC850),
+	                      wait)
 
-	messageReschedule := fmt.Sprintf("re-scheduling syncing from %s to %s (%s in the future)", oldTime.Format(time.RFC850), newSchedule.Format(time.RFC850), wait)
-	messageScheduled := fmt.Sprintf("syncing scheduled for %s (%s from now)", newSchedule.Format(time.RFC850), wait)
-
-	if r.timer == nil {
-		r.timer = time.AfterFunc(wait, func() {
-			r.run(nm, nmp, rsp)
-		})
-		logrus.Infoln(messageScheduled)
-	} else if !r.ignoreCalls {
-		// syncing is not running, reset timer
-
-		// "For a Timer created with AfterFunc(d, f), Reset either reschedules
-		// when f will run, in which case Reset returns true, or schedules f to
-		// run again, in which case it returns false."
-		rescheduled := r.timer.Reset(wait)
-		r.timeOfJob = newSchedule
-		if rescheduled {
-			logrus.Infoln(messageReschedule)
-		} else {
-			logrus.Infoln(messageScheduled)
-		}
+	_, exists := r.mutex[key]
+	if !exists {
+		r.mutex[key] = new(sync.RWMutex)
 	}
+	r.mutex[key].Lock()
+	_, exists = r.timer[key]
+	main := true// main is true for the goroutine that will run sync
+	if exists {
+		// Stop should be called before Reset according to go docs
+		if r.timer[key].Stop() {
+			main = false // stopped running timer -> main is another goroutine
+		}
+		r.timer[key].Reset(wait)
+	} else {
+		r.timer[key] = time.NewTimer(wait)
+	}
+	r.mutex[key].Unlock()
 
-	if r.ignoreCalls {
-		logrus.Warningf("Ignoring this request, scheduled job for %s is running", r.timeOfJob.Format(time.RFC850))
+	if main {
+		logrus.Infof(format, "Scheduled")
+		select {
+		case <-r.timer[key].C:
+			r.run(rsp)
+		case <-done:
+			//just get out
+		}
+	} else {
+		logrus.Infof(format, "Rescheduled")
 	}
 }
 
-func (r *RunningBox) run(nm, nmp string, rsp IDLEEvent) {
-	r.ignoreCalls = true
-	defer func() {
-		// turn off the flag
-		r.ignoreCalls = false
-	}()
-
+func (r *RunningBox) run(rsp IDLEEvent) {
 	if r.debug {
-		logrus.Infoln("running sinchronization...")
+		logrus.Infof("[%s:%s] Running synchronization...",
+		              rsp.Alias,
+		              rsp.Mailbox)
 	}
 
-	newmail := PrepareCommand(nm, rsp, r.debug)
-	newmailpost := PrepareCommand(nmp, rsp, r.debug)
-
+	if (rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "") {
+		return
+	}
+	newmail := PrepareCommand(rsp.OnNewMail, rsp, r.debug)
 	err := newmail.Run()
 	if err != nil {
-		logrus.Errorf("OnNewMail command failed: %s", err)
+		logrus.Errorf("[%s:%s] OnNewMail command failed: %s",
+		             rsp.Alias,
+		             rsp.Mailbox,
+		             err)
 	} else {
+		if (rsp.OnNewMailPost == "SKIP" ||
+		    rsp.OnNewMailPost == "") {
+			return
+		}
+		newmailpost := PrepareCommand(rsp.OnNewMailPost, rsp, r.debug)
 		err = newmailpost.Run()
 		if err != nil {
-			logrus.Errorf("OnNewMailPost command failed: %s", err)
+			logrus.Errorf("[%s:%s] OnNewMailPost command failed: %s",
+			              rsp.Alias,
+			              rsp.Mailbox,
+			              err)
 		}
 	}
 }
