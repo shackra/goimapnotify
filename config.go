@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2021	Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,23 +16,76 @@ package main
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+// NotifyConfigLegacy holds the old configuration format
+type NotifyConfigLegacy struct {
+	Host          string           `json:"host"`
+	HostCMD       string           `json:"hostCmd,omitempty"`
+	Port          int              `json:"port"`
+	TLS           bool             `json:"tls,omitempty"`
+	TLSOptions    TLSOptionsStruct `json:"tlsOption"`
+	Username      string           `json:"username"`
+	UsernameCMD   string           `json:"usernameCmd,omitempty"`
+	Password      string           `json:"password"`
+	PasswordCMD   string           `json:"passwordCmd,omitempty"`
+	XOAuth2       bool             `json:"xoauth2"`
+	OnNewMail     string           `json:"onNewMail"`
+	OnNewMailPost string           `json:"onNewMailPost,omitempty"`
+	Debug         bool             `json:"-"`
+	Boxes         []string         `json:"boxes"`
+}
+
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
-	Host       string `json:"host"`
-	HostCMD    string `json:"hostCmd,omitempty"`
-	Port       int    `json:"port"`
-	TLS        bool   `json:"tls,omitempty"`
-	TLSOptions struct {
-		RejectUnauthorized bool `json:"reject_unauthorized"`
-	} `json:"tlsOption"`
-	Username      string   `json:"username"`
-	UsernameCMD   string   `json:"usernameCmd,omitempty"`
-	Password      string   `json:"password"`
-	PasswordCMD   string   `json:"passwordCmd,omitempty"`
-	XOAuth2       bool     `json:"xoauth2"`
-	OnNewMail     string   `json:"onNewMail"`
-	OnNewMailPost string   `json:"onNewMailPost,omitempty"`
-	Wait          int      `json:"wait"`
-	Debug         bool     `json:"-"`
-	Boxes         []string `json:"boxes"`
+	Host          string           `json:"host"`
+	HostCMD       string           `json:"hostCmd,omitempty"`
+	Port          int              `json:"port"`
+	TLS           bool             `json:"tls,omitempty"`
+	TLSOptions    TLSOptionsStruct `json:"tlsOption"`
+	Username      string           `json:"username"`
+	UsernameCMD   string           `json:"usernameCmd,omitempty"`
+	Alias         string           `json:"alias"`
+	Password      string           `json:"password"`
+	PasswordCMD   string           `json:"passwordCmd,omitempty"`
+	XOAuth2       bool             `json:"xoauth2"`
+	OnNewMail     string           `json:"onNewMail"`
+	OnNewMailPost string           `json:"onNewMailPost,omitempty"`
+	Debug         bool             `json:"-"`
+	Boxes         []Box            `json:"boxes"`
+}
+
+type TLSOptionsStruct struct {
+	RejectUnauthorized bool `json:"reject_unauthorized"`
+}
+
+/*
+Box stores all the necessary info needed to be passed in an
+IDLEEvent handler routine, in order to schedule commands and
+print informative messages
+*/
+type Box struct {
+	Alias         string `json:"-"`
+	Mailbox       string `json:"mailbox"`
+	OnNewMail     string `json:"OnNewMail"`
+	OnNewMailPost string `json:"onNewMailPost"`
+}
+
+func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
+	var r []NotifyConfig
+	var c NotifyConfig
+	c.Host = conf.Host
+	c.HostCMD = conf.HostCMD
+	c.Port = conf.Port
+	c.TLS = conf.TLS
+	c.TLSOptions = conf.TLSOptions
+	c.Username = conf.Username
+	c.UsernameCMD = conf.UsernameCMD
+	c.Password = conf.Password
+	c.PasswordCMD = conf.PasswordCMD
+	c.XOAuth2 = conf.XOAuth2
+	c.OnNewMail = conf.OnNewMail
+	c.OnNewMailPost = conf.OnNewMailPost
+	for _, mailbox := range conf.Boxes {
+		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
+	}
+	return append(r, c)
 }
