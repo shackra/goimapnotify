@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	"fmt"
-	"time"
+	"github.com/sirupsen/logrus"
 	"sync"
+	"time"
 )
 
 var (
@@ -25,7 +25,7 @@ type RunningBox struct {
 func NewRunningBox(debug bool, wait int) *RunningBox {
 	return &RunningBox{
 		debug: debug,
-		wait: wait,
+		wait:  wait,
 		timer: make(map[string]*time.Timer),
 		mutex: make(map[string]*sync.RWMutex),
 	}
@@ -33,27 +33,23 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 
 func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 
-	if (rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "") {
+	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
 		logrus.Infof("[%s:%s] No scripts to be executed. Skipping..",
-		             rsp.Alias,
-		             rsp.Mailbox)
+			rsp.Alias,
+			rsp.Mailbox)
 		return
 	}
 	key := rsp.Alias + rsp.Mailbox
 	wait := time.Duration(r.wait) * time.Second
 	format := fmt.Sprintf("[%s:%s] %%s syncing for %s (%s in the future)",
-	                      rsp.Alias,
-	                      rsp.Mailbox,
-	                      time.Now().Add(wait).Format(time.RFC850),
-	                      wait)
+		rsp.Alias,
+		rsp.Mailbox,
+		time.Now().Add(wait).Format(time.RFC850),
+		wait)
 
-	_, exists := r.mutex[key]
-	if !exists {
-		r.mutex[key] = new(sync.RWMutex)
-	}
 	r.mutex[key].Lock()
-	_, exists = r.timer[key]
-	main := true// main is true for the goroutine that will run sync
+	_, exists := r.timer[key]
+	main := true // main is true for the goroutine that will run sync
 	if exists {
 		// Stop should be called before Reset according to go docs
 		if r.timer[key].Stop() {
@@ -81,32 +77,32 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 func (r *RunningBox) run(rsp IDLEEvent) {
 	if r.debug {
 		logrus.Infof("[%s:%s] Running synchronization...",
-		              rsp.Alias,
-		              rsp.Mailbox)
+			rsp.Alias,
+			rsp.Mailbox)
 	}
 
-	if (rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "") {
+	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
 		return
 	}
 	newmail := PrepareCommand(rsp.OnNewMail, rsp, r.debug)
 	err := newmail.Run()
 	if err != nil {
 		logrus.Errorf("[%s:%s] OnNewMail command failed: %s",
-		             rsp.Alias,
-		             rsp.Mailbox,
-		             err)
+			rsp.Alias,
+			rsp.Mailbox,
+			err)
 	} else {
-		if (rsp.OnNewMailPost == "SKIP" ||
-		    rsp.OnNewMailPost == "") {
+		if rsp.OnNewMailPost == "SKIP" ||
+			rsp.OnNewMailPost == "" {
 			return
 		}
 		newmailpost := PrepareCommand(rsp.OnNewMailPost, rsp, r.debug)
 		err = newmailpost.Run()
 		if err != nil {
 			logrus.Errorf("[%s:%s] OnNewMailPost command failed: %s",
-			              rsp.Alias,
-			              rsp.Mailbox,
-			              err)
+				rsp.Alias,
+				rsp.Mailbox,
+				err)
 		}
 	}
 }
