@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -32,20 +33,15 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 }
 
 func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
-
+	l := logrus.WithField("alias", rsp.Alias).WithField("mailbox", rsp.Mailbox)
 	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
-		logrus.Infof("[%s:%s] No scripts to be executed. Skipping..",
-			rsp.Alias,
-			rsp.Mailbox)
+		l.Infoln("No scripts to be executed. Skipping...")
 		return
 	}
 	key := rsp.Alias + rsp.Mailbox
 	wait := time.Duration(r.wait) * time.Second
-	format := fmt.Sprintf("[%s:%s] %%s syncing for %s (%s in the future)",
-		rsp.Alias,
-		rsp.Mailbox,
-		time.Now().Add(wait).Format(time.RFC850),
-		wait)
+	format := fmt.Sprintf("%%s syncing for %s (%s in the future)",
+		time.Now().Add(wait).Format(time.RFC850), wait)
 
 	r.mutex[key].Lock()
 	_, exists := r.timer[key]
@@ -62,7 +58,7 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 	r.mutex[key].Unlock()
 
 	if main {
-		logrus.Infof(format, "Scheduled")
+		l.Infof(format, "Scheduled")
 		select {
 		case <-r.timer[key].C:
 			r.run(rsp)
@@ -70,15 +66,14 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 			//just get out
 		}
 	} else {
-		logrus.Infof(format, "Rescheduled")
+		l.Infof(format, "Rescheduled")
 	}
 }
 
 func (r *RunningBox) run(rsp IDLEEvent) {
+	l := logrus.WithField("alias", rsp.Alias).WithField("mailbox", rsp.Mailbox)
 	if r.debug {
-		logrus.Infof("[%s:%s] Running synchronization...",
-			rsp.Alias,
-			rsp.Mailbox)
+		l.Infoln("Running synchronization...")
 	}
 
 	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
@@ -87,10 +82,7 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 	newmail := PrepareCommand(rsp.OnNewMail, rsp, r.debug)
 	err := newmail.Run()
 	if err != nil {
-		logrus.Errorf("[%s:%s] OnNewMail command failed: %s",
-			rsp.Alias,
-			rsp.Mailbox,
-			err)
+		l.WithError(err).Errorln("OnNewMail command failed")
 	} else {
 		if rsp.OnNewMailPost == "SKIP" ||
 			rsp.OnNewMailPost == "" {
@@ -99,10 +91,7 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 		newmailpost := PrepareCommand(rsp.OnNewMailPost, rsp, r.debug)
 		err = newmailpost.Run()
 		if err != nil {
-			logrus.Errorf("[%s:%s] OnNewMailPost command failed: %s",
-				rsp.Alias,
-				rsp.Mailbox,
-				err)
+			l.WithError(err).Errorln("OnNewMailPost command failed")
 		}
 	}
 }
