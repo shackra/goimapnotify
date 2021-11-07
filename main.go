@@ -17,7 +17,6 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
-	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -39,19 +38,7 @@ func main() {
 
 	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
-		logrus.Fatalf("Can't read file: %s", err)
-	}
-	var config []NotifyConfig
-	err = json.Unmarshal(raw, &config)
-	if err != nil {
-		var configLegacy NotifyConfigLegacy
-		err = json.Unmarshal(raw, &configLegacy)
-		if err != nil {
-			logrus.Fatalf("Can't parse the configuration: %s", err)
-		} else {
-			logrus.Warnf("Legacy configuration format detected")
-			config = legacyConverter(configLegacy)
-		}
+		logrus.WithError(err).Fatalln("Can't read file")
 	}
 
 	idleChan := make(chan IDLEEvent)
@@ -62,19 +49,18 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	wg := &sync.WaitGroup{}
 
+	config, err := loadConfig(raw, *debug)
+	if err != nil {
+		logrus.WithError(err).Fatal("Cannot read configuration")
+	}
+
 	// indexes used because we need to change struct data
 	for i := range config {
-		config[i] = retrieveCmd(config[i])
-		config[i].Debug = *debug
-		if config[i].Alias == "" {
-			config[i].Alias = config[i].Username
-		}
-
+		l := logrus.WithField("alias", config[i].Alias)
 		if *list {
 			client, cErr := newClient(config[i])
 			if cErr != nil {
-				logrus.Fatalf("[%s] Something went wrong creating IMAP client: %s",
-					config[i].Alias, cErr)
+				l.WithError(cErr).Fatal("Something went wrong creating IMAP client")
 			}
 			// nolint
 			defer client.Logout()
@@ -86,40 +72,31 @@ func main() {
 			// listen in "boxes"
 
 			for j := range config[i].Boxes {
-				/*
-				 * Copy default names if empty. Use SKIP to skip execution
-				 * The check is happening in running.go:run
-				 */
-				config[i].Boxes[j] = setFromConfig(config[i], config[i].Boxes[j])
+				l = l.WithField("mailbox", config[i].Boxes[j].Mailbox)
+
 				client, iErr := newIMAPIDLEClient(config[i])
 				if iErr != nil {
-					logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s",
-						config[i].Boxes[j].Alias, config[i].Boxes[j].Mailbox, iErr)
+					l.WithError(iErr).Fatal("Something went wrong creating IDLE client")
 				}
 				box := config[i].Boxes[j]
 				key := box.Alias + box.Mailbox
 				running.mutex[key] = new(sync.RWMutex)
-				NewWatchBox(client, config[i], config[i].Boxes[j],
-					idleChan, boxChan, doneChan, wg)
+				NewWatchBox(client, config[i], box, idleChan, boxChan, doneChan, wg)
 			}
 		}
 	}
-	run := true
-	if *list {
-		run = false
-	}
+
+	run := !*list
 	for run {
 		select {
 		case boxEvent := <-boxChan:
-			logrus.Infof("[%s:%s] Restarting watcher for mailbox",
-				boxEvent.Mailbox.Alias, boxEvent.Mailbox.Mailbox)
+			l := logrus.WithField("alias", boxEvent.Mailbox.Alias).WithField("mailbox", boxEvent.Mailbox.Mailbox)
+			l.Info("Restarting watcher for mailbox")
 			client, fErr := newIMAPIDLEClient(boxEvent.Conf)
 			if fErr != nil {
-				logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s",
-					boxEvent.Mailbox.Alias, boxEvent.Mailbox.Mailbox, fErr)
+				l.WithError(fErr).Fatalf("Something went wrong creating IDLE client")
 			}
-			NewWatchBox(client, boxEvent.Conf, boxEvent.Mailbox,
-				idleChan, boxChan, doneChan, wg)
+			NewWatchBox(client, boxEvent.Conf, boxEvent.Mailbox, idleChan, boxChan, doneChan, wg)
 		case <-quit:
 			// OS asked nicely to close, we ask our
 			// goroutines to do the same

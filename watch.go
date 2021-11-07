@@ -41,6 +41,7 @@ type WatchMailBox struct {
 	idleEvent chan<- IDLEEvent
 	boxEvent  chan<- BoxEvent
 	done      <-chan struct{}
+	l         *logrus.Entry
 }
 
 func (w *WatchMailBox) Watch() {
@@ -48,15 +49,12 @@ func (w *WatchMailBox) Watch() {
 	done := make(chan error, 1)
 
 	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
-		logrus.Fatalf("[%s:%s] Cannot select mailbox: %s",
-		              w.box.Alias,
-		              w.box.Mailbox,
-		              err)
+		w.l.WithError(err).Fatal("Cannot select mailbox")
 	}
 	w.client.Updates = updates
 
 	go func() {
-		logrus.Infof("[%s:%s] Watching mailbox", w.box.Alias, w.box.Mailbox)
+		w.l.Info("Watching mailbox")
 		done <- w.client.IdleWithFallback(nil, 0) // 0 = good default
 		_ = w.client.Logout()
 	}()
@@ -77,14 +75,10 @@ func (w *WatchMailBox) Watch() {
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
-			logrus.Warnf("[%s:%s] Stopping client watching mailbox",
-			             w.box.Alias,
-			             w.box.Mailbox)
+			w.l.Warn("Stopping client watching mailbox")
 			return
 		case finished := <-done:
-			logrus.Warnf("[%s:%s] Done watching mailbox",
-			             w.box.Alias,
-			             w.box.Mailbox)
+			w.l.Warn("Done watching mailbox")
 			if finished != nil {
 				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}
@@ -95,7 +89,7 @@ func (w *WatchMailBox) Watch() {
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
 func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-                 b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
+	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
 	w := WatchMailBox{
 		client:    c,
 		conf:      f,
@@ -103,6 +97,7 @@ func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 		idleEvent: i,
 		boxEvent:  b,
 		done:      q,
+		l:         logrus.WithField("alias", m.Alias).WithField("mailbox", m.Mailbox),
 	}
 
 	wg.Add(1)

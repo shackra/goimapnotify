@@ -1,5 +1,11 @@
 package main
 
+import (
+	"encoding/json"
+
+	"github.com/sirupsen/logrus"
+)
+
 // This file is part of goimapnotify
 // Copyright (C) 2017-2021	Jorge Javier Araya Navarro
 
@@ -88,4 +94,32 @@ func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
 		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
 	}
 	return append(r, c)
+}
+
+func loadConfig(d []byte, debugging bool) ([]NotifyConfig, error) {
+	var config []NotifyConfig
+	err := json.Unmarshal(d, &config)
+	if err != nil {
+		var configLegacy NotifyConfigLegacy
+		err = json.Unmarshal(d, &configLegacy)
+		if err != nil {
+			return nil, err
+		} else {
+			logrus.Infoln("Legacy configuration format detected")
+			config = legacyConverter(configLegacy)
+		}
+	}
+
+	for i := range config {
+		config[i] = retrieveCmd(config[i])
+		config[i].Debug = debugging
+		if config[i].Alias == "" {
+			config[i].Alias = config[i].Username
+		}
+		for j := range config[i].Boxes {
+			config[i].Boxes[j] = setFromConfig(config[i], config[i].Boxes[j])
+		}
+	}
+
+	return config, nil
 }
