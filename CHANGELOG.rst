@@ -2,6 +2,42 @@ Changelog
 =========
 
 
+2.4-rc1
+-------
+
+Changes
+~~~~~~~
+- Refactor configuration-related code. [Jorge Javier Araya Navarro]
+
+Other
+~~~~~
+- Merge branch 'shackra/refactor-config-loading' into 'master' [Jorge
+  Javier Araya Navarro]
+
+  chg: Refactor configuration-related code
+
+  See merge request shackra/goimapnotify!13
+- Add @ckardaris fix for concurrent map write error. [Jorge Javier Araya
+  Navarro]
+- Merge branch 'master' into 'master' [Jorge Javier Araya Navarro]
+
+  Multiple hosts and scripts using single configuration file (addressing #16 and #7)
+
+  See merge request shackra/goimapnotify!12
+- Multiple hosts and scripts using single configuration file (addressing
+  #16 and #7) [Charalampos Kardaris]
+
+
+2.3.7 (2021-10-10)
+------------------
+
+Fix
+~~~
+- Remove syncing on start. [Jorge Javier Araya Navarro]
+
+  - fixes shackra/goimapnotify#15
+
+
 2.3.6 (2021-09-29)
 ------------------
 
