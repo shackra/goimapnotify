@@ -26,15 +26,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func printDelimiter(c *client.Client) {
+func printDelimiter(c *client.Client) error {
 	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
 	go func() {
-		c.List("", "*", mailboxes)
+		done <- c.List("", "*", mailboxes)
 	}()
 
 	m := <-mailboxes
+	for _ = range mailboxes {
+	}
+	if err := <-done; err != nil {
+		return err
+	}
 
 	fmt.Println("Hierarchy delimiter is:", m.Delimiter)
+	return nil
 }
 
 func walkMailbox(c *client.Client, b string, l int) error {

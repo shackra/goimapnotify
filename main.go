@@ -65,7 +65,7 @@ func main() {
 			// nolint
 			defer client.Logout()
 
-			printDelimiter(client)
+			_ = printDelimiter(client)
 			_ = walkMailbox(client, "", 0)
 		} else {
 			// launch watchers for all mailboxes
