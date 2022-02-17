@@ -26,18 +26,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func printDelimiter(c *client.Client) {
+func printDelimiter(c *client.Client) (int, error) {
 	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
 	go func() {
-		c.List("", "*", mailboxes)
+		done <- c.List("", "*", mailboxes)
 	}()
 
+	i := 0
 	m := <-mailboxes
+	for _ = range mailboxes {
+		i += 1
+	}
+	if err := <-done; err != nil {
+		return 0, err
+	}
 
 	fmt.Println("Hierarchy delimiter is:", m.Delimiter)
+	return i, nil
 }
 
-func walkMailbox(c *client.Client, b string, l int) error {
+func walkMailbox(c *client.Client, b string, l, max int) error {
 	// FIXME: This can be done better
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	done := make(chan error, 1)
@@ -47,13 +56,13 @@ func walkMailbox(c *client.Client, b string, l int) error {
 
 	pos := 0
 	for m := range mailboxes {
-		box := boxchar(pos, l, len(m.Name))
+		box := boxchar(pos, l, max)
 		fmt.Println(box, m.Name)
 		pos += 1
 		// Check if mailbox has children mailboxes
 		for _, attr := range m.Attributes {
 			if attr == "\\Haschildren" {
-				err := walkMailbox(c, m.Name, l+1)
+				err := walkMailbox(c, m.Name, l+1, max)
 				if err != nil {
 					logrus.Errorf("cannot keep walking mailboxes: %s\n", err)
 					return err

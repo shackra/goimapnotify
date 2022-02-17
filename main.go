@@ -65,8 +65,8 @@ func main() {
 			// nolint
 			defer client.Logout()
 
-			printDelimiter(client)
-			_ = walkMailbox(client, "", 0)
+			max, _ := printDelimiter(client)
+			_ = walkMailbox(client, "", 0, max)
 		} else {
 			// launch watchers for all mailboxes
 			// listen in "boxes"
