@@ -35,7 +35,7 @@ func printDelimiter(c *client.Client) (int, error) {
 
 	i := 0
 	m := <-mailboxes
-	for _ = range mailboxes {
+	for range mailboxes {
 		i += 1
 	}
 	if err := <-done; err != nil {
@@ -160,6 +160,6 @@ func setFromConfig(conf NotifyConfig, box Box) Box {
 	if box.OnNewMailPost == "" {
 		box.OnNewMailPost = conf.OnNewMailPost
 	}
-    box.Alias = conf.Alias
+	box.Alias = conf.Alias
 	return box
 }

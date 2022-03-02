@@ -20,10 +20,16 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/emersion/go-imap-idle"
+	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-sasl"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	maxAttempts = 5
 )
 
 type IMAPIDLEClient struct {
@@ -32,14 +38,27 @@ type IMAPIDLEClient struct {
 }
 
 func newClient(conf NotifyConfig) (c *client.Client, err error) {
-	if conf.TLS {
-		c, err = client.DialTLS(conf.Host+fmt.Sprintf(":%d", conf.Port), &tls.Config{
-			ServerName:         conf.Host,
-			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
-		})
-	} else {
-		c, err = client.Dial(conf.Host + fmt.Sprintf(":%d", conf.Port))
+	for attempt := 1; attempt < maxAttempts; attempt++ {
+		if conf.TLS {
+			c, err = client.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), &tls.Config{
+				ServerName:         conf.Host,
+				InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+			})
+		} else {
+			c, err = client.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
+		}
+
+		if err != nil {
+			// wait a bit if something went wrong trying to connect to the IMAP server
+			seconds := time.Duration(attempt) * 10 * time.Second
+			logrus.WithError(err).WithField("host", conf.Host).WithField("port", conf.Port).Errorf("there was an error attempting to connect the email client, retrying in %s (attempt %d)", seconds, attempt)
+			time.Sleep(seconds)
+		} else {
+			// things went okay, stop the loop
+			break
+		}
 	}
+
 	if err != nil {
 		return c, err
 	}
