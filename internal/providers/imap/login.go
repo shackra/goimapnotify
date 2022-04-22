@@ -138,7 +138,7 @@ func authRegular(imapClient *client.Client, username, password string) (*client.
 	return imapClient, nil
 }
 
-func newIMAPClient(host string, port int, username string, opts ...loginOption) (*client.Client, error) {
+func newLogin(host string, port int, username string, opts ...loginOption) (*client.Client, error) {
 	// set default options
 	options := loginOptions{
 		debug:              false,
