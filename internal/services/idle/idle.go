@@ -3,6 +3,7 @@ package idle
 import "gitlab.com/shackra/goimapnotify/internal/services/models"
 
 type idleWatcher interface {
+	GetMailbox() string
 	WatchIdle(chan struct{})
 }
 
@@ -17,19 +18,24 @@ type commandDeletedEmail interface {
 }
 
 type idleService struct {
-	providers []idleWatcher
+	providers map[string]idleWatcher
 	stop      chan struct{}
 	events    chan models.Event
 }
 
+// Replace replaces a idleWatcher that suddenly stop running
+func (i *idleService) Replace(watcher idleWatcher) {
+	name := watcher.GetMailbox()
+
+	i.providers[name] = watcher
+
+	go func() {
+		watcher.WatchIdle(i.stop)
+	}()
+}
+
 func (i *idleService) Watch(newEmail commandNewEmail, deletedEmail commandDeletedEmail) {
-	// FIXME: better start these somewhere else, so that we can spin a new idleWatcher if needed
-	for index := range i.providers {
-		provider := i.providers[index]
-		go func() {
-			provider.WatchIdle(i.stop)
-		}()
-	}
+	i.start()
 
 	select {
 	case event := <-i.events:
@@ -54,10 +60,26 @@ func (i *idleService) Watch(newEmail commandNewEmail, deletedEmail commandDelete
 	}
 }
 
+func (i *idleService) start() {
+	for name := range i.providers {
+		provider := i.providers[name]
+		go func() {
+			provider.WatchIdle(i.stop)
+		}()
+	}
+}
+
 func New(watchers []idleWatcher, stop chan struct{}, events chan models.Event) *idleService {
+	providers := make(map[string]idleWatcher)
+
+	for _, provider := range watchers {
+		name := provider.GetMailbox()
+		providers[name] = provider
+	}
+
 	return &idleService{
 		stop:      stop,
-		providers: watchers,
+		providers: providers,
 		events:    events,
 	}
 }

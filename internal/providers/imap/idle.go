@@ -30,6 +30,10 @@ func (i *IdleClient) selectMailbox(mailbox string) error {
 	return nil
 }
 
+func (i *IdleClient) GetMailbox() string {
+	return i.mailbox
+}
+
 func (i *IdleClient) WatchIdle(stop chan struct{}) {
 	go func() {
 		// if finished sends non-nil error, something went wrong
