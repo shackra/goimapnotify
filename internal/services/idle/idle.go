@@ -23,7 +23,7 @@ type idleService struct {
 	events    chan models.Event
 }
 
-// Replace replaces a idleWatcher that suddenly stop running
+// Replace replaces an idleWatcher that suddenly stop running
 func (i *idleService) Replace(watcher idleWatcher) {
 	name := watcher.GetMailbox()
 
