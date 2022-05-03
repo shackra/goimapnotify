@@ -7,14 +7,14 @@ type idleWatcher interface {
 	WatchIdle(chan struct{})
 }
 
-type commandNewEmail interface {
-	NewEmail(mailbox string) error
-	NewEmailPost(mailbox string) error
+type commanderEmailNew interface {
+	WhenNew(mailbox string) error
+	WhenNewPost(mailbox string) error
 }
 
-type commandDeletedEmail interface {
-	DeletedEmail(mailbox string) error
-	DeletedEmailPost(mailbox string) error
+type commanderEmailDeleted interface {
+	WhenDeleted(mailbox string) error
+	WhenDeletedPost(mailbox string) error
 }
 
 type idleService struct {
@@ -34,26 +34,26 @@ func (i *idleService) Replace(watcher idleWatcher) {
 	}()
 }
 
-func (i *idleService) Watch(newEmail commandNewEmail, deletedEmail commandDeletedEmail) {
+func (i *idleService) Watch(newEmail commanderEmailNew, deletedEmail commanderEmailDeleted) {
 	i.start()
 
 	select {
 	case event := <-i.events:
 		switch event.Kind {
 		case models.NewMail:
-			if err := newEmail.NewEmail(event.Mailbox); err != nil {
+			if err := newEmail.WhenNew(event.Mailbox); err != nil {
 				// TODO: log error
 				break
 			}
-			if err := newEmail.NewEmailPost(event.Mailbox); err != nil {
+			if err := newEmail.WhenNewPost(event.Mailbox); err != nil {
 				// TODO: log error
 			}
 		case models.DeletedMail:
-			if err := deletedEmail.DeletedEmail(event.Mailbox); err != nil {
+			if err := deletedEmail.WhenDeleted(event.Mailbox); err != nil {
 				// TODO: log error
 				break
 			}
-			if err := deletedEmail.DeletedEmailPost(event.Mailbox); err != nil {
+			if err := deletedEmail.WhenDeletedPost(event.Mailbox); err != nil {
 				// TODO: log error
 			}
 		}
