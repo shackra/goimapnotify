@@ -56,6 +56,7 @@ func (i *idleService) Watch(newEmail commanderEmailNew, deletedEmail commanderEm
 			if err := deletedEmail.WhenDeletedPost(event.Mailbox); err != nil {
 				// TODO: log error
 			}
+			// TODO: resend event in other cases to another channel
 		}
 	}
 }
