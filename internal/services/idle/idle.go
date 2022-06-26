@@ -7,9 +7,9 @@ type idleWatcher interface {
 	WatchIdle(chan struct{})
 }
 
-type commanderEmailArrived interface {
-	WhenNew(mailbox string) error
-	WhenNewPost(mailbox string) error
+type commanderEmailReceived interface {
+	WhenReceived(mailbox string) error
+	WhenReceivedPost(mailbox string) error
 }
 
 type commanderEmailDeleted interface {
@@ -34,18 +34,18 @@ func (i *idleService) Replace(watcher idleWatcher) {
 	}()
 }
 
-func (i *idleService) Watch(arrivedEmail commanderEmailArrived, deletedEmail commanderEmailDeleted) {
+func (i *idleService) Watch(receivedEmail commanderEmailReceived, deletedEmail commanderEmailDeleted) {
 	i.start()
 
 	select {
 	case event := <-i.events:
 		switch event.Kind {
-		case models.ArrivedEmail:
-			if err := arrivedEmail.WhenNew(event.Mailbox); err != nil {
+		case models.ReceivedEmail:
+			if err := receivedEmail.WhenReceived(event.Mailbox); err != nil {
 				// TODO: log error
 				break
 			}
-			if err := arrivedEmail.WhenNewPost(event.Mailbox); err != nil {
+			if err := receivedEmail.WhenReceivedPost(event.Mailbox); err != nil {
 				// TODO: log error
 			}
 		case models.DeletedEmail:

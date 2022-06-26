@@ -50,7 +50,7 @@ func (i *IdleClient) WatchIdle(stop chan struct{}) {
 	case update := <-i.updates:
 		if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox.Messages > 0 {
 			i.events <- models.Event{
-				Kind:    models.ArrivedEmail,
+				Kind:    models.ReceivedEmail,
 				Mailbox: i.mailbox,
 			}
 		}

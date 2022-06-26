@@ -5,7 +5,7 @@ type UpdateKind int
 const (
 	FinishedWithFailure UpdateKind = iota
 	FinishedSuccesfully
-	ArrivedEmail
+	ReceivedEmail
 	DeletedEmail
 )
 
