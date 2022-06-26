@@ -40,7 +40,7 @@ func (i *idleService) Watch(arrivedEmail commanderEmailArrived, deletedEmail com
 	select {
 	case event := <-i.events:
 		switch event.Kind {
-		case models.NewMail:
+		case models.ArrivedEmail:
 			if err := arrivedEmail.WhenNew(event.Mailbox); err != nil {
 				// TODO: log error
 				break
@@ -48,7 +48,7 @@ func (i *idleService) Watch(arrivedEmail commanderEmailArrived, deletedEmail com
 			if err := arrivedEmail.WhenNewPost(event.Mailbox); err != nil {
 				// TODO: log error
 			}
-		case models.DeletedMail:
+		case models.DeletedEmail:
 			if err := deletedEmail.WhenDeleted(event.Mailbox); err != nil {
 				// TODO: log error
 				break

@@ -5,8 +5,8 @@ type UpdateKind int
 const (
 	FinishedWithFailure UpdateKind = iota
 	FinishedSuccesfully
-	NewMail
-	DeletedMail
+	ArrivedEmail
+	DeletedEmail
 )
 
 type Event struct {
