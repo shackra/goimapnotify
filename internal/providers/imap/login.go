@@ -51,7 +51,7 @@ type loginOptions struct {
 	password string
 }
 
-type loginOption interface {
+type LoginOption interface {
 	apply(opts *loginOptions)
 }
 
@@ -138,7 +138,7 @@ func authRegular(imapClient *client.Client, username, password string) (*client.
 	return imapClient, nil
 }
 
-func newLogin(host string, port int, username string, opts ...loginOption) (*client.Client, error) {
+func newLogin(host string, port int, username string, opts ...LoginOption) (*client.Client, error) {
 	// set default options
 	options := loginOptions{
 		debug:              false,

@@ -2,29 +2,24 @@ package idle
 
 import "gitlab.com/shackra/goimapnotify/internal/services/models"
 
-type idleWatcher interface {
-	GetMailbox() string
-	WatchIdle(chan struct{})
-}
-
-type commanderEmailReceived interface {
+type CommanderEmailReceived interface {
 	WhenReceived(mailbox string) error
 	WhenReceivedPost(mailbox string) error
 }
 
-type commanderEmailDeleted interface {
+type CommanderEmailDeleted interface {
 	WhenDeleted(mailbox string) error
 	WhenDeletedPost(mailbox string) error
 }
 
-type idleService struct {
-	providers map[string]idleWatcher
+type IdleService struct {
+	providers map[string]*models.IdleWatcher
 	stop      chan struct{}
 	events    chan models.Event
 }
 
 // Replace replaces an idleWatcher that suddenly stop running
-func (i *idleService) Replace(watcher idleWatcher) {
+func (i *IdleService) Replace(watcher *models.IdleWatcher) {
 	name := watcher.GetMailbox()
 
 	i.providers[name] = watcher
@@ -34,7 +29,7 @@ func (i *idleService) Replace(watcher idleWatcher) {
 	}()
 }
 
-func (i *idleService) Watch(receivedEmail commanderEmailReceived, deletedEmail commanderEmailDeleted) {
+func (i *IdleService) Watch(receivedEmail CommanderEmailReceived, deletedEmail CommanderEmailDeleted) {
 	i.start()
 
 	select {
@@ -61,7 +56,7 @@ func (i *idleService) Watch(receivedEmail commanderEmailReceived, deletedEmail c
 	}
 }
 
-func (i *idleService) start() {
+func (i *IdleService) start() {
 	for name := range i.providers {
 		provider := i.providers[name]
 		go func() {
@@ -70,15 +65,15 @@ func (i *idleService) start() {
 	}
 }
 
-func New(watchers []idleWatcher, stop chan struct{}, events chan models.Event) *idleService {
-	providers := make(map[string]idleWatcher)
+func New(watchers []*models.IdleWatcher, stop chan struct{}, events chan models.Event) *IdleService {
+	providers := make(map[string]*models.IdleWatcher)
 
 	for _, provider := range watchers {
 		name := provider.GetMailbox()
 		providers[name] = provider
 	}
 
-	return &idleService{
+	return &IdleService{
 		stop:      stop,
 		providers: providers,
 		events:    events,

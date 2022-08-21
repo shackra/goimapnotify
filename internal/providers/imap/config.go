@@ -7,5 +7,5 @@ type Config struct {
 
 	Mailbox string
 
-	Opts []loginOption
+	Opts []LoginOption
 }

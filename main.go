@@ -16,6 +16,22 @@ package main
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-func main() {
+import (
+	"gitlab.com/shackra/goimapnotify/internal/providers/imap"
+)
 
+func main() {
+	_, err := imap.New(&imap.Config{
+		Host:     "127.0.0.1",
+		Port:     1143,
+		Username: "jorge@esavara.cr",
+		Mailbox:  "INBOX",
+		Opts: []imap.LoginOption{
+			imap.WithDebug(true),
+			imap.WithPassword("7SF5dZ_HpLIhLROcgIkmTQ"),
+		},
+	}, nil)
+	if err != nil {
+		panic(err)
+	}
 }
