@@ -28,7 +28,7 @@ func main() {
 		Mailbox:  "INBOX",
 		Opts: []imap.LoginOption{
 			imap.WithDebug(true),
-			imap.WithPassword("7SF5dZ_HpLIhLROcgIkmTQ"),
+			imap.WithPassword("I'm glad this is the password for Protonmail Bridge"),
 		},
 	}, nil)
 	if err != nil {
