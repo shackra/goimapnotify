@@ -7,16 +7,19 @@ import (
 )
 
 type App struct {
-	events  chan models.Event
-	stop    chan struct{}
-	service *idle.IdleService
+	events   chan models.Event
+	stop     chan struct{}
+	service  *idle.IdleService
+	received idle.CommanderEmailReceived
+	deleted  idle.CommanderEmailDeleted
 }
 
 func (a *App) Start() {
-	a.service.Watch(nil, nil) // TODO: use something instead of nil
+	a.service.Watch(a.received, a.deleted)
 }
 
 func New(conf *Config) (*App, error) {
+	// TODO: set values for received and deleted from the configuration
 	app := &App{
 		events: make(chan models.Event),
 		stop:   make(chan struct{}),
