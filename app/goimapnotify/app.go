@@ -1,3 +1,3 @@
 package goimapnotify
 
-// TODO: put everything to setup goimapnotify here
+// TODO: glue everything to setup goimapnotify here
