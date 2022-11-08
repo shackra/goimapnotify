@@ -47,12 +47,11 @@ flycheck_*.el
 
 ### Go ###
 # Binaries for programs and plugins
-*.exe
-*.dll
-*.so
-*.dylib
-goimapnotify
-gin-bin
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/gin-bin
 
 # Test binary, build with `go test -c`
 *.test
