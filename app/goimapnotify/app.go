@@ -25,7 +25,7 @@ func New(conf *Config) (*App, error) {
 			Host:     conf.Host,
 			Port:     conf.Port,
 			Username: conf.Username,
-			Mailbox:  conf.Mailboxes[0], // FIXME: allow for n mailboxes
+			Mailbox:  conf.Mailboxes[clientIndex],
 			Opts: []imap.LoginOption{
 				imap.WithDebug(conf.Debug),
 				imap.WithTLS(conf.UseTLS),
