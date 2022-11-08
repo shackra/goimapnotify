@@ -2,6 +2,7 @@ package goimapnotify
 
 import (
 	"gitlab.com/shackra/goimapnotify/internal/providers/imap"
+	"gitlab.com/shackra/goimapnotify/internal/services/commands"
 	"gitlab.com/shackra/goimapnotify/internal/services/idle"
 	"gitlab.com/shackra/goimapnotify/internal/services/models"
 )
@@ -19,10 +20,12 @@ func (a *App) Start() {
 }
 
 func New(conf *Config) (*App, error) {
-	// TODO: set values for received and deleted from the configuration
+	received, deleted := commands.New(conf.ReceivedEmailCommand, conf.ReceivedEmailPostCommand, conf.DeletedEmailCommand, conf.DeletedEmailPostCommand)
 	app := &App{
-		events: make(chan models.Event),
-		stop:   make(chan struct{}),
+		events:   make(chan models.Event),
+		stop:     make(chan struct{}),
+		received: received,
+		deleted:  deleted,
 	}
 
 	clients := make([]*models.IdleWatcher, len(conf.Mailboxes))

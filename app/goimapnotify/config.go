@@ -15,5 +15,10 @@ type Config struct {
 	PasswordCommand string
 	UsernameCommand string
 
+	ReceivedEmailCommand     string
+	DeletedEmailCommand      string
+	ReceivedEmailPostCommand string
+	DeletedEmailPostCommand  string
+
 	Debug bool
 }
