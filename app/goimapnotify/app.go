@@ -12,6 +12,10 @@ type App struct {
 	service *idle.IdleService
 }
 
+func (a *App) Start(received idle.CommanderEmailReceived, deleted idle.CommanderEmailDeleted) {
+	a.service.Watch(received, deleted)
+}
+
 func New(conf *Config) (*App, error) {
 	app := &App{
 		events: make(chan models.Event),
