@@ -12,8 +12,8 @@ type App struct {
 	service *idle.IdleService
 }
 
-func (a *App) Start(received idle.CommanderEmailReceived, deleted idle.CommanderEmailDeleted) {
-	a.service.Watch(received, deleted)
+func (a *App) Start() {
+	a.service.Watch(nil, nil) // TODO: use something instead of nil
 }
 
 func New(conf *Config) (*App, error) {
