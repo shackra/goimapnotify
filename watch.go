@@ -18,7 +18,9 @@ package main
 
 import (
 	"sync"
+	"time"
 
+	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/sirupsen/logrus"
 )
@@ -33,9 +35,16 @@ type BoxEvent struct {
 	Mailbox Box
 }
 
+type idleClient interface {
+	IdleWithFallback(<-chan struct{}, time.Duration) error
+	Select(string, bool) (*imap.MailboxStatus, error)
+	SetUpdates(chan<- client.Update)
+	Logout() error
+}
+
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
-	client    *IMAPIDLEClient
+	client    idleClient
 	conf      NotifyConfig
 	box       Box
 	idleEvent chan<- IDLEEvent
@@ -51,7 +60,7 @@ func (w *WatchMailBox) Watch() {
 	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
 		w.l.WithError(err).Fatal("Cannot select mailbox")
 	}
-	w.client.Updates = updates
+	w.client.SetUpdates(updates)
 
 	go func() {
 		w.l.Info("Watching mailbox")
@@ -88,8 +97,9 @@ func (w *WatchMailBox) Watch() {
 }
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
-func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
+func NewWatchBox(c idleClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
+	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
+) {
 	w := WatchMailBox{
 		client:    c,
 		conf:      f,

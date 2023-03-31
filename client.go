@@ -37,6 +37,10 @@ type IMAPIDLEClient struct {
 	*idle.IdleClient
 }
 
+func (i *IMAPIDLEClient) SetUpdates(u chan<- client.Update) {
+	i.Updates = u
+}
+
 func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	for attempt := 1; attempt < maxAttempts; attempt++ {
 		if conf.TLS {
