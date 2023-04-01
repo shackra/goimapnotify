@@ -8,10 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	tag = "mail sync job"
-)
-
 type RunningBox struct {
 	debug bool
 	wait  int
@@ -63,7 +59,7 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 		case <-r.timer[key].C:
 			r.run(rsp)
 		case <-done:
-			//just get out
+			// just get out
 		}
 	} else {
 		l.Infof(format, "Rescheduled")
