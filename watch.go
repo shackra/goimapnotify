@@ -64,7 +64,7 @@ func (w *WatchMailBox) EmailDeleted(m *client.ExpungeUpdate) {
 }
 
 func (w *WatchMailBox) RestartWatchingBox(b BoxEvent) {
-	w.l.Warn("restarting watch on mail box: %s", w.box.Mailbox)
+	w.l.Warnf("restarting watch on mail box: %s", w.box.Mailbox)
 	w.boxEvent <- b
 }
 
