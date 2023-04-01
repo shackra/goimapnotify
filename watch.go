@@ -53,7 +53,22 @@ type WatchMailBox struct {
 	l         *logrus.Entry
 }
 
-func (w *WatchMailBox) Watch() {
+func (w *WatchMailBox) EmailArrived(m *client.MailboxUpdate) {
+	if m.Mailbox.Messages > 0 {
+		w.idleEvent <- w.box
+	}
+}
+
+func (w *WatchMailBox) EmailDeleted(m *client.ExpungeUpdate) {
+	w.idleEvent <- w.box
+}
+
+func (w *WatchMailBox) RestartWatchingBox(b BoxEvent) {
+	w.l.Warn("restarting watch on mail box: %s", w.box.Mailbox)
+	w.boxEvent <- b
+}
+
+func (w *WatchMailBox) Watch(whenExit func()) {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
@@ -68,30 +83,33 @@ func (w *WatchMailBox) Watch() {
 		_ = w.client.Logout()
 	}()
 
+	// called after this function exits
+	defer whenExit()
+
 	// Block and process IDLE events
-	for {
+	stop := false
+	for !stop {
 		select {
 		case update := <-updates:
-			m, ok := update.(*client.MailboxUpdate)
-			if ok && m.Mailbox.Messages > 0 {
-				// dispatch IDLE event to the main loop
-				w.idleEvent <- w.box
-			}
-			// message deleted
-			_, ok = update.(*client.ExpungeUpdate)
-			if ok {
-				w.idleEvent <- w.box
+			switch event := update.(type) {
+			case *client.MailboxUpdate:
+				w.EmailArrived(event)
+			case *client.ExpungeUpdate:
+				w.EmailDeleted(event)
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
-			w.l.Warn("Stopping client watching mailbox")
-			return
+			w.l.Info("Stopping client watching mailbox")
+			stop = true
 		case finished := <-done:
-			w.l.Warn("Done watching mailbox")
+			w.l.Info("Done watching mailbox")
 			if finished != nil {
-				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
+				w.RestartWatchingBox(BoxEvent{
+					Conf:    w.conf,
+					Mailbox: w.box,
+				})
 			}
-			return
+			stop = true
 		}
 	}
 }
@@ -100,7 +118,7 @@ func (w *WatchMailBox) Watch() {
 func NewWatchBox(c idleClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
 ) {
-	w := WatchMailBox{
+	w := &WatchMailBox{
 		client:    c,
 		conf:      f,
 		box:       m,
@@ -112,7 +130,8 @@ func NewWatchBox(c idleClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		w.Watch()
+		w.Watch(func() {
+			wg.Done()
+		})
 	}()
 }
