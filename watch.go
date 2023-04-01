@@ -17,6 +17,7 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -31,7 +32,7 @@ type IDLEEvent = Box
 // BoxEvent helps in communication between the box watch launcher and the box
 // watching goroutines
 type BoxEvent struct {
-	Conf    NotifyConfig
+	Conf    *NotifyConfig
 	Mailbox Box
 }
 
@@ -45,7 +46,7 @@ type idleClient interface {
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
 	client    idleClient
-	conf      NotifyConfig
+	conf      *NotifyConfig
 	box       Box
 	idleEvent chan<- IDLEEvent
 	boxEvent  chan<- BoxEvent
@@ -68,12 +69,12 @@ func (w *WatchMailBox) RestartWatchingBox(b BoxEvent) {
 	w.boxEvent <- b
 }
 
-func (w *WatchMailBox) Watch(whenExit func()) {
+func (w *WatchMailBox) Watch(whenExit func()) error {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
 	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
-		w.l.WithError(err).Fatal("Cannot select mailbox")
+		return fmt.Errorf("Cannot select mailbox: %w", err)
 	}
 	w.client.SetUpdates(updates)
 
@@ -112,10 +113,12 @@ func (w *WatchMailBox) Watch(whenExit func()) {
 			stop = true
 		}
 	}
+
+	return nil
 }
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
-func NewWatchBox(c idleClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
+func NewWatchBox(c idleClient, f *NotifyConfig, m Box, i chan<- IDLEEvent,
 	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
 ) {
 	w := &WatchMailBox{
@@ -130,8 +133,11 @@ func NewWatchBox(c idleClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 
 	wg.Add(1)
 	go func() {
-		w.Watch(func() {
+		err := w.Watch(func() {
 			wg.Done()
 		})
+		if err != nil {
+			logrus.WithError(err).Warn("mailbox watching terminated with error")
+		}
 	}()
 }

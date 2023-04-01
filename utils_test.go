@@ -23,7 +23,7 @@ import (
 
 func TestPasswordCMD(t *testing.T) {
 	password := "secret123"
-	c := retrievePasswordCmd(NotifyConfig{PasswordCMD: fmt.Sprintf("echo %s", password)})
+	c := retrievePasswordCmd(&NotifyConfig{PasswordCMD: fmt.Sprintf("echo %s", password)})
 	if c.Password != password {
 		t.Fatalf("'%s' != '%s'", c.Password, password)
 	}

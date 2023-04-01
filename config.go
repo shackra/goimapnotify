@@ -118,8 +118,8 @@ func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
 	return append(r, c)
 }
 
-func loadConfig(d []byte, debugging bool) ([]NotifyConfig, error) {
-	var config []NotifyConfig
+func loadConfig(d []byte, debugging bool) ([]*NotifyConfig, error) {
+	var config []*NotifyConfig
 	err := json.Unmarshal(d, &config)
 	if err != nil {
 		confErrs := newConfigurationError(err)

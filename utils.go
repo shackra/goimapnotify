@@ -95,7 +95,7 @@ func boxchar(p, l, b int) string {
 	return drawthis
 }
 
-func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
+func retrievePasswordCmd(conf *NotifyConfig) *NotifyConfig {
 	if conf.PasswordCMD != "" {
 		cmd := PrepareCommand(conf.PasswordCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the password
@@ -110,7 +110,7 @@ func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 	return conf
 }
 
-func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
+func retrieveUsernameCmd(conf *NotifyConfig) *NotifyConfig {
 	if conf.UsernameCMD != "" {
 		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the username
@@ -125,7 +125,7 @@ func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
 	return conf
 }
 
-func retrieveHostCmd(conf NotifyConfig) NotifyConfig {
+func retrieveHostCmd(conf *NotifyConfig) *NotifyConfig {
 	if conf.HostCMD != "" {
 		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the hostname
@@ -140,7 +140,7 @@ func retrieveHostCmd(conf NotifyConfig) NotifyConfig {
 	return conf
 }
 
-func retrieveCmd(conf NotifyConfig) NotifyConfig {
+func retrieveCmd(conf *NotifyConfig) *NotifyConfig {
 	if conf.PasswordCMD != "" {
 		conf = retrievePasswordCmd(conf)
 	}
@@ -153,7 +153,7 @@ func retrieveCmd(conf NotifyConfig) NotifyConfig {
 	return conf
 }
 
-func setFromConfig(conf NotifyConfig, box Box) Box {
+func setFromConfig(conf *NotifyConfig, box Box) Box {
 	if box.OnNewMail == "" {
 		box.OnNewMail = conf.OnNewMail
 	}

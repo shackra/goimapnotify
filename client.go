@@ -41,7 +41,7 @@ func (i *IMAPIDLEClient) SetUpdates(u chan<- client.Update) {
 	i.Updates = u
 }
 
-func newClient(conf NotifyConfig) (c *client.Client, err error) {
+func newClient(conf *NotifyConfig) (c *client.Client, err error) {
 	for attempt := 1; attempt < maxAttempts; attempt++ {
 		if conf.TLS {
 			c, err = client.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), &tls.Config{
@@ -108,7 +108,7 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	return c, err
 }
 
-func newIMAPIDLEClient(conf NotifyConfig) (c *IMAPIDLEClient, err error) {
+func newIMAPIDLEClient(conf *NotifyConfig) (c *IMAPIDLEClient, err error) {
 	confCMDExecuted := retrieveCmd(conf)
 	i, err := newClient(confCMDExecuted)
 	if err != nil {

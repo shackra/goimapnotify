@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -58,15 +59,10 @@ func main() {
 	for i := range config {
 		l := logrus.WithField("alias", config[i].Alias)
 		if *list {
-			client, cErr := newClient(config[i])
-			if cErr != nil {
-				l.WithError(cErr).Fatal("Something went wrong creating IMAP client")
+			err := listBoxes(config[i])
+			if err != nil {
+				l.WithError(err).Fatal("something went wrong when trying to list the mailboxes")
 			}
-			// nolint
-			defer client.Logout()
-
-			max, _ := printDelimiter(client)
-			_ = walkMailbox(client, "", 0, max)
 		} else {
 			// launch watchers for all mailboxes
 			// listen in "boxes"
@@ -113,4 +109,24 @@ func main() {
 	logrus.Info("Waiting other goroutines to stop...")
 	wg.Wait()
 	logrus.Info("Bye")
+}
+
+func listBoxes(c *NotifyConfig) error {
+	client, err := newClient(c)
+	if err != nil {
+		return fmt.Errorf("cannot create IMAP client: %w", err)
+	}
+	defer client.Logout()
+
+	max, err := printDelimiter(client)
+	if err != nil {
+		return fmt.Errorf("unable to get print delimeter: %w", err)
+	}
+
+	err = walkMailbox(client, "", 0, max)
+	if err != nil {
+		return fmt.Errorf("unable to walk throught your mailboxes: %w", err)
+	}
+
+	return nil
 }
