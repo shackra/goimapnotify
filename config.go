@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -71,8 +73,28 @@ print informative messages
 type Box struct {
 	Alias         string `json:"-"`
 	Mailbox       string `json:"mailbox"`
-	OnNewMail     string `json:"OnNewMail"`
+	OnNewMail     string `json:"onNewMail"`
 	OnNewMailPost string `json:"onNewMailPost"`
+}
+
+type configurationError struct {
+	errors []error
+}
+
+func (c *configurationError) Error() string {
+	var found []string
+	for _, v := range c.errors {
+		found = append(found, v.Error())
+	}
+	return fmt.Sprintf("When trying to load the configuration we found the following issues > %s", strings.Join(found, "; "))
+}
+
+func (c *configurationError) Push(err error) {
+	c.errors = append(c.errors, err)
+}
+
+func newConfigurationError(err error) *configurationError {
+	return &configurationError{[]error{err}}
 }
 
 func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
@@ -100,10 +122,12 @@ func loadConfig(d []byte, debugging bool) ([]NotifyConfig, error) {
 	var config []NotifyConfig
 	err := json.Unmarshal(d, &config)
 	if err != nil {
+		confErrs := newConfigurationError(err)
 		var configLegacy NotifyConfigLegacy
 		err = json.Unmarshal(d, &configLegacy)
 		if err != nil {
-			return nil, err
+			confErrs.Push(err)
+			return nil, confErrs
 		} else {
 			logrus.Infoln("Legacy configuration format detected")
 			config = legacyConverter(configLegacy)
