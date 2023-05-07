@@ -1,6 +1,6 @@
 module gitlab.com/shackra/goimapnotify
 
-go 1.15
+go 1.20
 
 require (
 	github.com/emersion/go-imap v1.0.0-beta.4.0.20190414203716-b7db4a2bc5cc
