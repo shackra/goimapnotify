@@ -97,25 +97,25 @@ func newConfigurationError(err error) *configurationError {
 	return &configurationError{[]error{err}}
 }
 
-func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
-	var r []NotifyConfig
-	var c NotifyConfig
-	c.Host = conf.Host
-	c.HostCMD = conf.HostCMD
-	c.Port = conf.Port
-	c.TLS = conf.TLS
-	c.TLSOptions = conf.TLSOptions
-	c.Username = conf.Username
-	c.UsernameCMD = conf.UsernameCMD
-	c.Password = conf.Password
-	c.PasswordCMD = conf.PasswordCMD
-	c.XOAuth2 = conf.XOAuth2
-	c.OnNewMail = conf.OnNewMail
-	c.OnNewMailPost = conf.OnNewMailPost
+func legacyConverter(conf NotifyConfigLegacy) []*NotifyConfig {
+	c := &NotifyConfig{
+		Host:          conf.Host,
+		HostCMD:       conf.HostCMD,
+		Port:          conf.Port,
+		TLS:           conf.TLS,
+		TLSOptions:    conf.TLSOptions,
+		Username:      conf.Username,
+		UsernameCMD:   conf.UsernameCMD,
+		Password:      conf.Password,
+		PasswordCMD:   conf.PasswordCMD,
+		XOAuth2:       conf.XOAuth2,
+		OnNewMail:     conf.OnNewMail,
+		OnNewMailPost: conf.OnNewMailPost,
+	}
 	for _, mailbox := range conf.Boxes {
 		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
 	}
-	return append(r, c)
+	return []*NotifyConfig{c}
 }
 
 func loadConfig(d []byte, debugging bool) ([]*NotifyConfig, error) {
