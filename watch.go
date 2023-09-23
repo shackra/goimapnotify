@@ -69,23 +69,22 @@ func (w *WatchMailBox) RestartWatchingBox(b BoxEvent) {
 	w.boxEvent <- b
 }
 
-func (w *WatchMailBox) Watch(whenExit func()) error {
+func (w *WatchMailBox) Run(done chan<- error) error {
+	w.l.Info("Watching mailbox")
+	done <- w.client.IdleWithFallback(nil, 0)
+	return w.client.Logout()
+}
+
+func (w *WatchMailBox) Watch(whenExit func(), done <-chan error) error {
+	// called after this function exits
+	defer whenExit()
+
 	updates := make(chan client.Update)
-	done := make(chan error, 1)
 
 	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
 		return fmt.Errorf("Cannot select mailbox: %w", err)
 	}
 	w.client.SetUpdates(updates)
-
-	go func() {
-		w.l.Info("Watching mailbox")
-		done <- w.client.IdleWithFallback(nil, 0) // 0 = good default
-		_ = w.client.Logout()
-	}()
-
-	// called after this function exits
-	defer whenExit()
 
 	// Block and process IDLE events
 	stop := false
@@ -131,13 +130,16 @@ func NewWatchBox(c idleClient, f *NotifyConfig, m Box, i chan<- IDLEEvent,
 		l:         logrus.WithField("alias", m.Alias).WithField("mailbox", m.Mailbox),
 	}
 
+	done := make(chan error)
+
 	wg.Add(1)
 	go func() {
 		err := w.Watch(func() {
 			wg.Done()
-		})
+		}, done)
 		if err != nil {
 			logrus.WithError(err).Warn("mailbox watching terminated with error")
 		}
 	}()
+	go w.Run(done)
 }

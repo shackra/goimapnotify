@@ -10,5 +10,4 @@ testing:
   stage: test
   script:
     - go vet ./...
-    - go build -v
-    - go test -coverprofile goimapnotify
+    - make test
