@@ -109,7 +109,11 @@ func newClient(conf *NotifyConfig) (c *client.Client, err error) {
 }
 
 func newIMAPIDLEClient(conf *NotifyConfig) (c *IMAPIDLEClient, err error) {
-	confCMDExecuted := retrieveCmd(conf)
+	confCMDExecuted, err := retrieveCmd(conf)
+	if err != nil {
+		return nil, err
+	}
+
 	i, err := newClient(confCMDExecuted)
 	if err != nil {
 		return c, err

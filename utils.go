@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	imap "github.com/emersion/go-imap"
@@ -95,7 +94,7 @@ func boxchar(p, l, b int) string {
 	return drawthis
 }
 
-func retrievePasswordCmd(conf *NotifyConfig) *NotifyConfig {
+func retrievePasswordCmd(conf *NotifyConfig) (*NotifyConfig, error) {
 	if conf.PasswordCMD != "" {
 		cmd := PrepareCommand(conf.PasswordCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the password
@@ -104,13 +103,13 @@ func retrievePasswordCmd(conf *NotifyConfig) *NotifyConfig {
 		if err == nil {
 			conf.Password = strings.Trim(string(buf[:]), "\n")
 		} else {
-			log.Fatalf("Can't retrieve password from command: %s", err)
+			return nil, fmt.Errorf("Can't retrieve password from command: %s", err)
 		}
 	}
-	return conf
+	return conf, nil
 }
 
-func retrieveUsernameCmd(conf *NotifyConfig) *NotifyConfig {
+func retrieveUsernameCmd(conf *NotifyConfig) (*NotifyConfig, error) {
 	if conf.UsernameCMD != "" {
 		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the username
@@ -119,13 +118,13 @@ func retrieveUsernameCmd(conf *NotifyConfig) *NotifyConfig {
 		if err == nil {
 			conf.Username = strings.Trim(string(buf[:]), "\n")
 		} else {
-			log.Fatalf("Can't retrieve username from command: %s", err)
+			return nil, fmt.Errorf("Can't retrieve username from command: %w", err)
 		}
 	}
-	return conf
+	return conf, nil
 }
 
-func retrieveHostCmd(conf *NotifyConfig) *NotifyConfig {
+func retrieveHostCmd(conf *NotifyConfig) (*NotifyConfig, error) {
 	if conf.HostCMD != "" {
 		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{}, conf.Debug)
 		// Avoid leaking the hostname
@@ -134,23 +133,33 @@ func retrieveHostCmd(conf *NotifyConfig) *NotifyConfig {
 		if err == nil {
 			conf.Host = strings.Trim(string(buf[:]), "\n")
 		} else {
-			log.Fatalf("Can't retrieve host from command: %s", err)
+			return nil, fmt.Errorf("Can't retrieve host from command: %w", err)
 		}
 	}
-	return conf
+	return conf, nil
 }
 
-func retrieveCmd(conf *NotifyConfig) *NotifyConfig {
+func retrieveCmd(conf *NotifyConfig) (*NotifyConfig, error) {
+	var err error
 	if conf.PasswordCMD != "" {
-		conf = retrievePasswordCmd(conf)
+		conf, err = retrievePasswordCmd(conf)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if conf.UsernameCMD != "" {
-		conf = retrieveUsernameCmd(conf)
+		conf, err = retrieveUsernameCmd(conf)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if conf.HostCMD != "" {
-		conf = retrieveHostCmd(conf)
+		conf, err = retrieveHostCmd(conf)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return conf
+	return conf, nil
 }
 
 func setFromConfig(conf *NotifyConfig, box Box) Box {

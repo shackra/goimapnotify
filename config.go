@@ -135,7 +135,11 @@ func loadConfig(d []byte, debugging bool) ([]*NotifyConfig, error) {
 	}
 
 	for i := range config {
-		config[i] = retrieveCmd(config[i])
+		var err error
+		config[i], err = retrieveCmd(config[i])
+		if err != nil {
+			return nil, err
+		}
 		config[i].Debug = debugging
 		if config[i].Alias == "" {
 			config[i].Alias = config[i].Username
