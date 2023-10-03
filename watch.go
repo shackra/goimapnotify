@@ -75,11 +75,13 @@ func (w *WatchMailBox) Run(done chan<- error) error {
 	return w.client.Logout()
 }
 
-func (w *WatchMailBox) Watch(whenExit func(), done <-chan error) error {
+func (w *WatchMailBox) Watch(whenExit func(), done <-chan error, updates chan client.Update) error {
 	// called after this function exits
 	defer whenExit()
 
-	updates := make(chan client.Update)
+	if updates == nil {
+		updates = make(chan client.Update)
+	}
 
 	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
 		return fmt.Errorf("Cannot select mailbox: %w", err)
@@ -136,7 +138,7 @@ func NewWatchBox(c idleClient, f *NotifyConfig, m Box, i chan<- IDLEEvent,
 	go func() {
 		err := w.Watch(func() {
 			wg.Done()
-		}, done)
+		}, done, nil)
 		if err != nil {
 			logrus.WithError(err).Warn("mailbox watching terminated with error")
 		}
