@@ -22,15 +22,25 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
 )
 
+func getDefaultConfigPath() string {
+	home := os.Getenv("XDG_CONFIG_HOME")
+	if home == "" {
+		return filepath.Join(os.Getenv("HOME"), ".config", "goimapnotify")
+	}
+
+	return filepath.Join(home, "goimapnotify")
+}
+
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
-	fileconf := flag.String("conf", "path/to/imapnotify.conf", "Configuration file")
+	fileconf := flag.String("conf", filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"), "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this may leak passwords !!)")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
