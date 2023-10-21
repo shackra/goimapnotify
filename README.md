@@ -37,10 +37,15 @@ This application is mostly compatible with the configuration of [imapnotify made
         "rejectUnauthorized": true
         "starttls": true
       },
-      "usernameCmd": "COMMAND_TO_RETRIEVE_USERNAME",
-      "alias": "ExampleNET",
-      "passwordCmd": "COMMAND_TO_RETRIEVE_PASSWORD_OR_XOATH2_TOKEN",
-      "xoauth2": true
+      "username": "",
+      "usernameCmd": "",
+      "password": "",
+      "passwordCmd": "",
+      "xoauth2": false,
+      "onNewMail": "",
+      "onNewMailPost": "",
+      "onDeletedMail": "",
+      "onDeletedMailPost": "",
       "wait": 20,
       "boxes": [
             {
