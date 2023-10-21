@@ -50,11 +50,13 @@ You can also use xoauth2 instead of password based authentication by setting the
 ## Usage
 
     Usage of goimapnotify:
-    -conf string
-        Configuration file (default "path/to/imapnotify.conf")
-    -debug
-        Output all network activity to the terminal (!! this may leak passwords !!)
-    -list
-        List all mailboxes and exit
+      -conf string
+            Configuration file (default "/home/jorge/.config/goimapnotify/goimapnotify.conf")
+      -debug
+            Output all network activity to the terminal (!! this may leak passwords !!)
+      -list
+            List all mailboxes and exit
+      -wait int
+            Period in seconds between IDLE event and execution of scripts (default 1)
 
 As you can notice, `-list` can help you figure out the mailbox hierarchy of your mail server.
