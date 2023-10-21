@@ -21,6 +21,8 @@ This application is mostly compatible with the configuration of [imapnotify made
       "xoauth2": false,
       "onNewMail": "",
       "onNewMailPost": "",
+      "onDeletedMail": "",
+      "onDeletedMailPost": "",
       "wait": 20,
       "boxes": [
         "INBOX"
