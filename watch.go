@@ -17,6 +17,7 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/emersion/go-imap/client"
@@ -47,11 +48,14 @@ func (w *WatchMailBox) Watch() {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
-	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
-		logrus.Fatalf("[%s:%s] Cannot select mailbox: %s",
-		              w.box.Alias,
-		              w.box.Mailbox,
-		              err)
+	_, err := w.client.Select(w.box.Mailbox, true)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "reason: Unknown Mailbox") {
+			logrus.Warnf("[%s:%s] Cannot select mailbox: %v, skipped!", w.box.Alias, w.box.Mailbox, err)
+			return
+		}
+		logrus.Fatalf("[%s:%s] Cannot select mailbox: %v", w.box.Alias, w.box.Mailbox, err)
 	}
 	w.client.Updates = updates
 
