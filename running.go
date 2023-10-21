@@ -77,28 +77,42 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 			rsp.Mailbox)
 	}
 
-	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
-		return
+	var err error
+	if rsp.Reason == NEWMAIL {
+		err = prepareAndRun(rsp.OnNewMail, rsp.OnNewMailPost, rsp.Reason, rsp, r.debug)
+	} else if rsp.Reason == DELETEDMAIL {
+		err = prepareAndRun(rsp.OnDeletedMail, rsp.OnDeletedMailPost, rsp.Reason, rsp, r.debug)
 	}
-	newmail := PrepareCommand(rsp.OnNewMail, rsp, r.debug)
-	err := newmail.Run()
+
 	if err != nil {
-		logrus.Errorf("[%s:%s] OnNewMail command failed: %s",
-			rsp.Alias,
-			rsp.Mailbox,
-			err)
-	} else {
-		if rsp.OnNewMailPost == "SKIP" ||
-			rsp.OnNewMailPost == "" {
-			return
-		}
-		newmailpost := PrepareCommand(rsp.OnNewMailPost, rsp, r.debug)
-		err = newmailpost.Run()
-		if err != nil {
-			logrus.Errorf("[%s:%s] OnNewMailPost command failed: %s",
-				rsp.Alias,
-				rsp.Mailbox,
-				err)
-		}
+		logrus.Error(err)
 	}
+}
+
+func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug bool) error {
+	callKind := "New"
+	if kind == DELETEDMAIL {
+		callKind = "Deleted"
+	}
+
+	if on == "SKIP" || on == "" {
+		return nil
+	}
+	call := PrepareCommand(on, event, debug)
+	err := call.Run()
+
+	if err != nil {
+		return fmt.Errorf("[%s:%s] On%sMail command failed: %v", event.Alias, event.Mailbox, callKind, err)
+	}
+
+	if onpost == "SKIP" || onpost == "" {
+		return nil
+	}
+	call = PrepareCommand(onpost, event, debug)
+	err = call.Run()
+	if err != nil {
+		return fmt.Errorf("[%s:%s] On%sMailPost command failed: %v", event.Alias, event.Mailbox, callKind, err)
+	}
+
+	return nil
 }

@@ -154,6 +154,15 @@ func setFromConfig(conf NotifyConfig, box Box) Box {
 	if box.OnNewMailPost == "" {
 		box.OnNewMailPost = conf.OnNewMailPost
 	}
+
+	// for deleted email
+	if box.OnDeletedMail == "" {
+		box.OnDeletedMail = conf.OnDeletedMail
+	}
+	if box.OnDeletedMailPost == "" {
+		box.OnDeletedMailPost = conf.OnDeletedMailPost
+	}
+
 	box.Alias = conf.Alias
 	return box
 }

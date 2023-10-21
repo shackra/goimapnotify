@@ -71,12 +71,12 @@ func (w *WatchMailBox) Watch() {
 			m, ok := update.(*client.MailboxUpdate)
 			if ok && m.Mailbox.Messages > 0 {
 				// dispatch IDLE event to the main loop
-				w.idleEvent <- w.box
+				w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
 			}
 			// message deleted
 			_, ok = update.(*client.ExpungeUpdate)
 			if ok {
-				w.idleEvent <- w.box
+				w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
@@ -98,8 +98,7 @@ func (w *WatchMailBox) Watch() {
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
 func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
-) {
+	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
 	w := WatchMailBox{
 		client:    c,
 		conf:      f,
@@ -114,4 +113,16 @@ func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 		defer wg.Done()
 		w.Watch()
 	}()
+}
+
+func makeIDLEEvent(w IDLEEvent, e EventType) IDLEEvent {
+	return IDLEEvent{
+		Alias:             w.Alias,
+		Mailbox:           w.Mailbox,
+		Reason:            e,
+		OnNewMail:         w.OnNewMail,
+		OnNewMailPost:     w.OnNewMailPost,
+		OnDeletedMail:     w.OnDeletedMail,
+		OnDeletedMailPost: w.OnDeletedMailPost,
+	}
 }
