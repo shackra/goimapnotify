@@ -53,9 +53,7 @@ func main() {
 
 	flag.Parse()
 
-	if *debug {
-		logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
-	}
+	logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
 
 	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
