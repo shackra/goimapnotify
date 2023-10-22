@@ -29,6 +29,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	commit string
+	gittag string
+	branch string
+)
+
 func getDefaultConfigPath() string {
 	home := os.Getenv("XDG_CONFIG_HOME")
 	if home == "" {
@@ -46,6 +52,10 @@ func main() {
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
 
 	flag.Parse()
+
+	if *debug {
+		logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
+	}
 
 	raw, err := ioutil.ReadFile(*fileconf)
 	if err != nil {
