@@ -23,6 +23,17 @@ const (
 	DELETEDMAIL
 )
 
+func (e EventType) String() string {
+	switch e {
+	case NEWMAIL:
+		return "New Email"
+	case DELETEDMAIL:
+		return "Deleted Email"
+	default:
+		return "Unknown Event"
+	}
+}
+
 // NotifyConfigLegacy holds the old configuration format
 type NotifyConfigLegacy struct {
 	Host              string           `json:"host"`
