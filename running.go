@@ -28,20 +28,15 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 }
 
 func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
-
-	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
-		logrus.Infof("[%s:%s] No scripts to be executed. Skipping..",
-			rsp.Alias,
-			rsp.Mailbox)
+	if shouldSkip(rsp) {
+		logrus.Warnf("[%s:%s] No command for %s, skipping scheduling...", rsp.Alias, rsp.Mailbox, rsp.Reason)
 		return
 	}
+
 	key := rsp.Alias + rsp.Mailbox
 	wait := time.Duration(r.wait) * time.Second
-	format := fmt.Sprintf("[%s:%s] %%s syncing for %s (%s in the future)",
-		rsp.Alias,
-		rsp.Mailbox,
-		time.Now().Add(wait).Format(time.RFC850),
-		wait)
+	when := time.Now().Add(wait).Format(time.RFC850)
+	format := fmt.Sprintf("[%s:%s] %%s syncing '%s' for %s (%s in the future)", rsp.Alias, rsp.Mailbox, rsp.Reason, when, wait)
 
 	r.mutex[key].Lock()
 	_, exists := r.timer[key]
@@ -115,4 +110,15 @@ func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug boo
 	}
 
 	return nil
+}
+
+func shouldSkip(event IDLEEvent) bool {
+	switch event.Reason {
+	case NEWMAIL:
+		return event.OnNewMail == "" || event.OnNewMail == "SKIP"
+	case DELETEDMAIL:
+		return event.OnDeletedMail == "" || event.OnDeletedMail == "SKIP"
+	}
+
+	return false
 }
