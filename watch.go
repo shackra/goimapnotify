@@ -68,15 +68,12 @@ func (w *WatchMailBox) Watch() {
 	for {
 		select {
 		case update := <-updates:
-			m, ok := update.(*client.MailboxUpdate)
-			if ok && m.Mailbox.Messages > 0 {
-				// dispatch IDLE event to the main loop
-				w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
-			}
-			// message deleted
-			_, ok = update.(*client.ExpungeUpdate)
-			if ok {
+			if e, ok := update.(*client.ExpungeUpdate); ok && e.SeqNum >= 1 {
+				// message deleted
 				w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
+			} else if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
+				// message arrived
+				w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
