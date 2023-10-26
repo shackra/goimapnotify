@@ -110,6 +110,8 @@ func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
 	c.XOAuth2 = conf.XOAuth2
 	c.OnNewMail = conf.OnNewMail
 	c.OnNewMailPost = conf.OnNewMailPost
+	c.OnDeletedMail = conf.OnDeletedMail
+	c.OnDeletedMailPost = conf.OnDeletedMailPost
 	for _, mailbox := range conf.Boxes {
 		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
 	}
