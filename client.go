@@ -32,7 +32,7 @@ type IMAPIDLEClient struct {
 }
 
 func newClient(conf NotifyConfig) (c *client.Client, err error) {
-	if conf.TLS {
+	if conf.TLS && !conf.TLSOptions.STARTTLS {
 		c, err = client.DialTLS(conf.Host+fmt.Sprintf(":%d", conf.Port), &tls.Config{
 			ServerName:         conf.Host,
 			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
@@ -47,6 +47,16 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	// turn on debugging
 	if conf.Debug {
 		c.SetDebug(os.Stdout)
+	}
+
+	if conf.TLS && conf.TLSOptions.STARTTLS {
+		err = c.StartTLS(&tls.Config{
+			ServerName:         conf.Host,
+			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if conf.XOAuth2 {

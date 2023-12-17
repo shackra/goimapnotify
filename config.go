@@ -55,6 +55,7 @@ type NotifyConfig struct {
 
 type TLSOptionsStruct struct {
 	RejectUnauthorized bool `json:"reject_unauthorized"`
+	STARTTLS           bool `json:"starttls"`
 }
 
 /*
