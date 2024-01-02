@@ -22,7 +22,7 @@ type NotifyConfigLegacy struct {
 	HostCMD       string           `json:"hostCmd,omitempty"`
 	Port          int              `json:"port"`
 	TLS           bool             `json:"tls,omitempty"`
-	TLSOptions    TLSOptionsStruct `json:"tlsOption"`
+	TLSOptions    TLSOptionsStruct `json:"tlsOptions"`
 	Username      string           `json:"username"`
 	UsernameCMD   string           `json:"usernameCmd,omitempty"`
 	Password      string           `json:"password"`
@@ -40,7 +40,7 @@ type NotifyConfig struct {
 	HostCMD       string           `json:"hostCmd,omitempty"`
 	Port          int              `json:"port"`
 	TLS           bool             `json:"tls,omitempty"`
-	TLSOptions    TLSOptionsStruct `json:"tlsOption"`
+	TLSOptions    TLSOptionsStruct `json:"tlsOptions"`
 	Username      string           `json:"username"`
 	UsernameCMD   string           `json:"usernameCmd,omitempty"`
 	Alias         string           `json:"alias"`
