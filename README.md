@@ -12,7 +12,8 @@ This application is mostly compatible with the configuration of [imapnotify made
       "port": 143,
       "tls": false,
       "tlsOptions": {
-        "rejectUnauthorized": true
+        "rejectUnauthorized": true,
+        "starttls": false
       },
       "username": "",
       "usernameCmd": "",
