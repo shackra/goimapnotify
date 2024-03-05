@@ -88,10 +88,14 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 				Port:  conf.Port,
 			}
 			sasl_client := sasl.NewOAuthBearerClient(sasl_oauth)
-			err = c.Authenticate(sasl_client)
+			if err := c.Authenticate(sasl_client); err != nil {
+				return nil, err
+			}
 		} else if okXOAuth2 {
 			sasl_xoauth2 := NewXoauth2Client(conf.Username, conf.Password)
-			err = c.Authenticate(sasl_xoauth2)
+			if err := c.Authenticate(sasl_xoauth2); err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		err = c.Login(conf.Username, conf.Password)

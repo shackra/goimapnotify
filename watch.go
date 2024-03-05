@@ -81,10 +81,14 @@ func (w *WatchMailBox) Watch() {
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
-			w.l.Warn("Stopping client watching mailbox")
+			logrus.Warnf("[%s:%s] Stopping client watching mailbox",
+				w.box.Alias,
+				w.box.Mailbox)
 			return
 		case finished := <-done:
-			w.l.Warn("Done watching mailbox")
+			logrus.Warnf("[%s:%s] Done watching mailbox",
+				w.box.Alias,
+				w.box.Mailbox)
 			if finished != nil {
 				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}

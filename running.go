@@ -8,10 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	tag = "mail sync job"
-)
-
 type RunningBox struct {
 	debug bool
 	wait  int
