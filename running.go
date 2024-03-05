@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-var (
-	tag = "mail sync job"
-)
-
 type RunningBox struct {
 	debug bool
 	wait  int

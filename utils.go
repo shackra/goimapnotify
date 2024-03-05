@@ -29,7 +29,10 @@ import (
 func printDelimiter(c *client.Client) {
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	go func() {
-		c.List("", "*", mailboxes)
+		err := c.List("", "*", mailboxes)
+		if err != nil {
+			logrus.WithError(err).Warning("listing mailboxes finished with error")
+		}
 	}()
 
 	m := <-mailboxes
@@ -151,6 +154,6 @@ func setFromConfig(conf NotifyConfig, box Box) Box {
 	if box.OnNewMailPost == "" {
 		box.OnNewMailPost = conf.OnNewMailPost
 	}
-    box.Alias = conf.Alias
+	box.Alias = conf.Alias
 	return box
 }

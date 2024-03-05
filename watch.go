@@ -49,7 +49,6 @@ func (w *WatchMailBox) Watch() {
 	done := make(chan error, 1)
 
 	_, err := w.client.Select(w.box.Mailbox, true)
-
 	if err != nil {
 		if strings.Contains(err.Error(), "reason: Unknown Mailbox") {
 			logrus.Warnf("[%s:%s] Cannot select mailbox: %v, skipped!", w.box.Alias, w.box.Mailbox, err)
@@ -82,13 +81,13 @@ func (w *WatchMailBox) Watch() {
 		case <-w.done:
 			// the main event loop is asking us to stop
 			logrus.Warnf("[%s:%s] Stopping client watching mailbox",
-			             w.box.Alias,
-			             w.box.Mailbox)
+				w.box.Alias,
+				w.box.Mailbox)
 			return
 		case finished := <-done:
 			logrus.Warnf("[%s:%s] Done watching mailbox",
-			             w.box.Alias,
-			             w.box.Mailbox)
+				w.box.Alias,
+				w.box.Mailbox)
 			if finished != nil {
 				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}
@@ -99,7 +98,8 @@ func (w *WatchMailBox) Watch() {
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
 func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-                 b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
+	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
+) {
 	w := WatchMailBox{
 		client:    c,
 		conf:      f,
