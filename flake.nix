@@ -47,7 +47,17 @@
       devShells = forEachSupportedSystem ({ pkgs, system }: {
         default = pkgs.mkShell {
           # Pinned packages available in the environment
-          packages = with pkgs; [ go_1_20 nixpkgs-fmt ];
+          packages = with pkgs; [
+            nixpkgs-fmt
+
+            go_1_20
+            gopls
+            golines
+            golangci-lint
+            golangci-lint-langserver
+
+            nodePackages_latest.bash-language-server
+          ];
           inherit (self.checks.${system}.pre-commit-check) shellHook;
         };
       });
