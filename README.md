@@ -6,27 +6,57 @@ Please read the `CHANGELOG` file to know what's new.
 
 This application is mostly compatible with the configuration of [imapnotify made with Python](https://github.com/a-sk/python-imapnotify) (be sure to change `password_eval` to `passwordCmd`, see [issue #3](https://gitlab.com/shackra/goimapnotify/issues/3)), the following are all options available for the configuration:
 
+```json
+[
     {
-      "host": "",
-      "hostCmd": "",
+      "host": "example.com",
       "port": 143,
-      "tls": false,
+      "tls": true,
       "tlsOptions": {
-        "rejectUnauthorized": true,
-        "starttls": false
+        "rejectUnauthorized": false
+        "starttls": true
       },
-      "username": "",
-      "usernameCmd": "",
-      "password": "",
-      "passwordCmd": "",
+      "username": "USERNAME",
+      "alias": "ExampleCOM",
+      "password": "PASSWORD",
       "xoauth2": false,
-      "onNewMail": "",
-      "onNewMailPost": "",
+      "wait": 1,
+      "boxes": [
+            {
+                "mailbox" : "INBOX",
+                "onNewMail": "mbsync examplecom:INBOX",
+                "onNewMailPost": "SKIP"
+            }
+      ]
+    },
+    {
+      "hostCmd": "COMMAND_TO_RETRIEVE_HOST",
+      "port": 993,
+      "tls": true,
+      "tlsOptions": {
+        "rejectUnauthorized": true
+        "starttls": true
+      },
+      "usernameCmd": "COMMAND_TO_RETRIEVE_USERNAME",
+      "alias": "ExampleNET",
+      "passwordCmd": "COMMAND_TO_RETRIEVE_PASSWORD_OR_XOATH2_TOKEN",
+      "xoauth2": true
       "wait": 20,
       "boxes": [
-        "INBOX"
+            {
+                "mailbox" : "INBOX",
+                "onNewMail": "mbsync examplenet:INBOX",
+                "onNewMailPost": "SKIP"
+            },
+            {
+                "mailbox" : "Junk",
+                "onNewMail": "mbsync examplenet:Junk",
+                "onNewMailPost": "SKIP"
+            }
       ]
     }
+]
+```
 
 On first start, the application will run `onNewMail` and `onNewMailPost` and then wait for events from your IMAP server.
 
@@ -52,7 +82,7 @@ You can also use xoauth2 instead of password based authentication by setting the
 
     Usage of goimapnotify:
       -conf string
-            Configuration file (default "/home/jorge/.config/goimapnotify/goimapnotify.conf")
+            Configuration file (default "${HOME}/.config/goimapnotify/goimapnotify.conf")
       -debug
             Output all network activity to the terminal (!! this may leak passwords !!)
       -list
