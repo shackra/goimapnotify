@@ -19,7 +19,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -59,7 +58,7 @@ func main() {
 	}
 	logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
 
-	raw, err := ioutil.ReadFile(*fileconf)
+	raw, err := os.ReadFile(*fileconf)
 	if err != nil {
 		logrus.Fatalf("Can't read file: %s", err)
 	}
