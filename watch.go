@@ -48,7 +48,7 @@ func (w *WatchMailBox) Watch() {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
-	_, err := w.client.Select(w.box.Mailbox, true)
+	status, err := w.client.Select(w.box.Mailbox, true)
 	if err != nil {
 		if strings.Contains(err.Error(), "reason: Unknown Mailbox") {
 			logrus.Warnf("[%s:%s] Cannot select mailbox: %v, skipped!", w.box.Alias, w.box.Mailbox, err)
@@ -56,6 +56,8 @@ func (w *WatchMailBox) Watch() {
 		}
 		logrus.Fatalf("[%s:%s] Cannot select mailbox: %v", w.box.Alias, w.box.Mailbox, err)
 	}
+	w.box.ExistingEmail = status.Messages
+
 	w.client.Updates = updates
 
 	go func() {
@@ -68,12 +70,15 @@ func (w *WatchMailBox) Watch() {
 	for {
 		select {
 		case update := <-updates:
-			if e, ok := update.(*client.ExpungeUpdate); ok && e.SeqNum >= 1 {
-				// message deleted
-				w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
-			} else if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
-				// message arrived
-				w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
+			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
+				if m.Mailbox.Messages > w.box.ExistingEmail {
+					// messages arrived
+					w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
+				} else {
+					// messages deleted
+					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
+				} // NOTE: What if the number is the same as before?
+				w.box.ExistingEmail = m.Mailbox.Messages
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop

@@ -93,6 +93,7 @@ type Box struct {
 	OnNewMailPost     string    `json:"onNewMailPost"`
 	OnDeletedMail     string    `json:"onDeletedMail"`
 	OnDeletedMailPost string    `json:"onDeletedMailPost"`
+	ExistingEmail     uint32    `json:"-"`
 }
 
 func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
