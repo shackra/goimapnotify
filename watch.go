@@ -57,6 +57,7 @@ func (w *WatchMailBox) Watch() {
 		logrus.Fatalf("[%s:%s] Cannot select mailbox: %v", w.box.Alias, w.box.Mailbox, err)
 	}
 	w.box.ExistingEmail = status.Messages
+	logrus.Debugf("[%s:%s] Existing mail: %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail)
 
 	w.client.Updates = updates
 
@@ -78,6 +79,7 @@ func (w *WatchMailBox) Watch() {
 					// messages deleted
 					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
 				} // NOTE: What if the number is the same as before?
+				logrus.Debugf("[%s:%s] Existing mail from %d to %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail, m.Mailbox.Messages)
 				w.box.ExistingEmail = m.Mailbox.Messages
 			}
 		case <-w.done:
