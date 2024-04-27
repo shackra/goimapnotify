@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2023  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -154,6 +154,15 @@ func setFromConfig(conf NotifyConfig, box Box) Box {
 	if box.OnNewMailPost == "" {
 		box.OnNewMailPost = conf.OnNewMailPost
 	}
+
+	// for deleted email
+	if box.OnDeletedMail == "" {
+		box.OnDeletedMail = conf.OnDeletedMail
+	}
+	if box.OnDeletedMailPost == "" {
+		box.OnDeletedMailPost = conf.OnDeletedMailPost
+	}
+
 	box.Alias = conf.Alias
 	return box
 }

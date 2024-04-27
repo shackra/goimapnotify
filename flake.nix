@@ -57,6 +57,8 @@
             golangci-lint-langserver
 
             nodePackages_latest.bash-language-server
+
+            git-chglog
           ];
           inherit (self.checks.${system}.pre-commit-check) shellHook;
         };

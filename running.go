@@ -1,5 +1,21 @@
 package main
 
+// This file is part of goimapnotify
+// Copyright (C) 2017-2023	Jorge Javier Araya Navarro
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -28,20 +44,15 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 }
 
 func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
-
-	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
-		logrus.Infof("[%s:%s] No scripts to be executed. Skipping..",
-			rsp.Alias,
-			rsp.Mailbox)
+	if shouldSkip(rsp) {
+		logrus.Warnf("[%s:%s] No command for %s, skipping scheduling...", rsp.Alias, rsp.Mailbox, rsp.Reason)
 		return
 	}
+
 	key := rsp.Alias + rsp.Mailbox
 	wait := time.Duration(r.wait) * time.Second
-	format := fmt.Sprintf("[%s:%s] %%s syncing for %s (%s in the future)",
-		rsp.Alias,
-		rsp.Mailbox,
-		time.Now().Add(wait).Format(time.RFC850),
-		wait)
+	when := time.Now().Add(wait).Format(time.RFC850)
+	format := fmt.Sprintf("[%s:%s] %%s syncing '%s' for %s (%s in the future)", rsp.Alias, rsp.Mailbox, rsp.Reason, when, wait)
 
 	r.mutex[key].Lock()
 	_, exists := r.timer[key]
@@ -77,28 +88,53 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 			rsp.Mailbox)
 	}
 
-	if rsp.OnNewMail == "SKIP" || rsp.OnNewMail == "" {
-		return
+	var err error
+	if rsp.Reason == NEWMAIL {
+		err = prepareAndRun(rsp.OnNewMail, rsp.OnNewMailPost, rsp.Reason, rsp, r.debug)
+	} else if rsp.Reason == DELETEDMAIL {
+		err = prepareAndRun(rsp.OnDeletedMail, rsp.OnDeletedMailPost, rsp.Reason, rsp, r.debug)
 	}
-	newmail := PrepareCommand(rsp.OnNewMail, rsp, r.debug)
-	err := newmail.Run()
+
 	if err != nil {
-		logrus.Errorf("[%s:%s] OnNewMail command failed: %s",
-			rsp.Alias,
-			rsp.Mailbox,
-			err)
-	} else {
-		if rsp.OnNewMailPost == "SKIP" ||
-			rsp.OnNewMailPost == "" {
-			return
-		}
-		newmailpost := PrepareCommand(rsp.OnNewMailPost, rsp, r.debug)
-		err = newmailpost.Run()
-		if err != nil {
-			logrus.Errorf("[%s:%s] OnNewMailPost command failed: %s",
-				rsp.Alias,
-				rsp.Mailbox,
-				err)
-		}
+		logrus.Error(err)
 	}
+}
+
+func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug bool) error {
+	callKind := "New"
+	if kind == DELETEDMAIL {
+		callKind = "Deleted"
+	}
+
+	if on == "SKIP" || on == "" {
+		return nil
+	}
+	call := PrepareCommand(on, event, debug)
+	err := call.Run()
+
+	if err != nil {
+		return fmt.Errorf("[%s:%s] On%sMail command failed: %v", event.Alias, event.Mailbox, callKind, err)
+	}
+
+	if onpost == "SKIP" || onpost == "" {
+		return nil
+	}
+	call = PrepareCommand(onpost, event, debug)
+	err = call.Run()
+	if err != nil {
+		return fmt.Errorf("[%s:%s] On%sMailPost command failed: %v", event.Alias, event.Mailbox, callKind, err)
+	}
+
+	return nil
+}
+
+func shouldSkip(event IDLEEvent) bool {
+	switch event.Reason {
+	case NEWMAIL:
+		return event.OnNewMail == "" || event.OnNewMail == "SKIP"
+	case DELETEDMAIL:
+		return event.OnDeletedMail == "" || event.OnDeletedMail == "SKIP"
+	}
+
+	return false
 }

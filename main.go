@@ -1,7 +1,7 @@
 package main
 
 // Execute scripts on events using IDLE imap command (Go version)
-// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2024  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -27,6 +26,12 @@ import (
 	"syscall"
 
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	commit string
+	gittag string
+	branch string
 )
 
 func getDefaultConfigPath() string {
@@ -47,7 +52,13 @@ func main() {
 
 	flag.Parse()
 
-	raw, err := ioutil.ReadFile(*fileconf)
+	logrus.SetLevel(logrus.InfoLevel)
+	if *debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+	logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
+
+	raw, err := os.ReadFile(*fileconf)
 	if err != nil {
 		logrus.Fatalf("Can't read file: %s", err)
 	}
