@@ -16,6 +16,6 @@ build:
 	go build -ldflags "$(LDFLAGS)"
 
 changelog:
-	git-chglog -o README.md 2.3.14..
+	git-chglog -o CHANGELOG.md 2.3.14..
 
 # end
