@@ -1,4 +1,4 @@
-# Go IMAP notify [![pipeline status](https://gitlab.com/shackra/goimapnotify/badges/master/pipeline.svg)](https://gitlab.com/shackra/goimapnotify/commits/master) [![coverage report](https://gitlab.com/shackra/goimapnotify/badges/master/coverage.svg)](https://gitlab.com/shackra/goimapnotify/commits/master) [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dshackra%26type%3Dpatrons&style=flat)](https://patreon.com/shackra) [![Donate Cardano ADA](https://img.shields.io/badge/Donate-$seaslugcr-blue?style=flat)](https://handle.me/seaslugcr) [![Donate Binance USD (BEP-20)](https://img.shields.io/badge/Donate-BUSD%20(BEP--20)-yellow?style=flat)](https://bscscan.com/address/0x9fd164E7CAE0fD5042772220964eA8E74ae647De)
+# Go IMAP notify [![pipeline status](https://gitlab.com/shackra/goimapnotify/badges/master/pipeline.svg)](https://gitlab.com/shackra/goimapnotify/commits/master) [![coverage report](https://gitlab.com/shackra/goimapnotify/badges/master/coverage.svg)](https://gitlab.com/shackra/goimapnotify/commits/master) [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dshackra%26type%3Dpatrons&style=flat)](https://patreon.com/shackra)
 
 Execute scripts on IMAP mailbox changes (new/deleted/updated messages) using IDLE, Golang version.
 
@@ -98,3 +98,9 @@ You can also use xoauth2 instead of password based authentication by setting the
             Period in seconds between IDLE event and execution of scripts (default 1)
 
 As you can notice, `-list` can help you figure out the mailbox hierarchy of your mail server.
+
+# Development
+nix-flake is use for development, is great and [you should try it](https://github.com/DeterminateSystems/nix-installer?tab=readme-ov-file#the-determinate-nix-installer) too! Activate support for flake in your nix installation and the environment will setup ✨*automagically*✨ for you.
+
+## Generating and editing the CHANGELOG
+When I started this project, I was naive and inexperienced with the fundamentals of software development, that has make most commits in this project have inconsistent titles that make it harder for tools like [`git-chglog`](https://github.com/git-chglog/git-chglog) help with CHANGELOG generation. I generated an ["old" CHANGELOG](./CHANGELOG_old.md) that contains all information until tag `2.3.13`. So, from now on, generate the CHANGELOG from tag `2.3.14` onwards, please and thank you!.
