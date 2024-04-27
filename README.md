@@ -37,10 +37,15 @@ This application is mostly compatible with the configuration of [imapnotify made
         "rejectUnauthorized": true
         "starttls": true
       },
-      "usernameCmd": "COMMAND_TO_RETRIEVE_USERNAME",
-      "alias": "ExampleNET",
-      "passwordCmd": "COMMAND_TO_RETRIEVE_PASSWORD_OR_XOATH2_TOKEN",
-      "xoauth2": true
+      "username": "",
+      "usernameCmd": "",
+      "password": "",
+      "passwordCmd": "",
+      "xoauth2": false,
+      "onNewMail": "",
+      "onNewMailPost": "",
+      "onDeletedMail": "",
+      "onDeletedMailPost": "",
       "wait": 20,
       "boxes": [
             {
@@ -62,6 +67,8 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 
 - `onNewMail`: is an executable or script to run when new mail has arrived.
 - `onNewMailPost`: is an executable or script to run after `onNewMail` has ran.
+- `onDeletedMail`: is an executable or script to run when mail has been delete.
+- `onDeletedMailPost`: is an executable or script to run after `onDeletedMail` has ran.
 - `hostCmd`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.
 - `usernameCmd`: is an executable or script that retrieves your username from somewhere, we cannot pass arguments to this command from `Stdin`.
 - `passwordCmd`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.

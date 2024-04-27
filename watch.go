@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2024  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ func (w *WatchMailBox) Watch() {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
-	_, err := w.client.Select(w.box.Mailbox, true)
+	status, err := w.client.Select(w.box.Mailbox, true)
 	if err != nil {
 		if strings.Contains(err.Error(), "reason: Unknown Mailbox") {
 			logrus.Warnf("[%s:%s] Cannot select mailbox: %v, skipped!", w.box.Alias, w.box.Mailbox, err)
@@ -57,6 +57,9 @@ func (w *WatchMailBox) Watch() {
 		}
 		logrus.Fatalf("[%s:%s] Cannot select mailbox: %v", w.box.Alias, w.box.Mailbox, err)
 	}
+	w.box.ExistingEmail = status.Messages
+	logrus.Debugf("[%s:%s] Existing mail: %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail)
+
 	w.client.Updates = updates
 
 	go func() {
@@ -69,15 +72,16 @@ func (w *WatchMailBox) Watch() {
 	for {
 		select {
 		case update := <-updates:
-			m, ok := update.(*client.MailboxUpdate)
-			if ok && m.Mailbox.Messages > 0 {
-				// dispatch IDLE event to the main loop
-				w.idleEvent <- w.box
-			}
-			// message deleted
-			_, ok = update.(*client.ExpungeUpdate)
-			if ok {
-				w.idleEvent <- w.box
+			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
+				if m.Mailbox.Messages > w.box.ExistingEmail {
+					// messages arrived
+					w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
+				} else {
+					// messages deleted
+					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
+				} // NOTE: What if the number is the same as before?
+				logrus.Debugf("[%s:%s] Existing mail from %d to %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail, m.Mailbox.Messages)
+				w.box.ExistingEmail = m.Mailbox.Messages
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
@@ -99,8 +103,7 @@ func (w *WatchMailBox) Watch() {
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
 func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
-) {
+	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
 	w := WatchMailBox{
 		client:    c,
 		conf:      f,
@@ -116,4 +119,16 @@ func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 		defer wg.Done()
 		w.Watch()
 	}()
+}
+
+func makeIDLEEvent(w IDLEEvent, e EventType) IDLEEvent {
+	return IDLEEvent{
+		Alias:             w.Alias,
+		Mailbox:           w.Mailbox,
+		Reason:            e,
+		OnNewMail:         w.OnNewMail,
+		OnNewMailPost:     w.OnNewMailPost,
+		OnDeletedMail:     w.OnDeletedMail,
+		OnDeletedMailPost: w.OnDeletedMailPost,
+	}
 }

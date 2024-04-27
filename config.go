@@ -9,7 +9,7 @@ import (
 )
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2021	Jorge Javier Araya Navarro
+// Copyright (C) 2017-2024	Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,41 +24,63 @@ import (
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+type EventType int
+
+const (
+	NEWMAIL EventType = iota + 1
+	DELETEDMAIL
+)
+
+func (e EventType) String() string {
+	switch e {
+	case NEWMAIL:
+		return "New Email"
+	case DELETEDMAIL:
+		return "Deleted Email"
+	default:
+		return "Unknown Event"
+	}
+}
+
 // NotifyConfigLegacy holds the old configuration format
 type NotifyConfigLegacy struct {
-	Host          string           `json:"host"`
-	HostCMD       string           `json:"hostCmd,omitempty"`
-	Port          int              `json:"port"`
-	TLS           bool             `json:"tls,omitempty"`
-	TLSOptions    TLSOptionsStruct `json:"tlsOptions"`
-	Username      string           `json:"username"`
-	UsernameCMD   string           `json:"usernameCmd,omitempty"`
-	Password      string           `json:"password"`
-	PasswordCMD   string           `json:"passwordCmd,omitempty"`
-	XOAuth2       bool             `json:"xoauth2"`
-	OnNewMail     string           `json:"onNewMail"`
-	OnNewMailPost string           `json:"onNewMailPost,omitempty"`
-	Debug         bool             `json:"-"`
-	Boxes         []string         `json:"boxes"`
+	Host              string           `json:"host"`
+	HostCMD           string           `json:"hostCmd,omitempty"`
+	Port              int              `json:"port"`
+	TLS               bool             `json:"tls,omitempty"`
+	TLSOptions        TLSOptionsStruct `json:"tlsOption"`
+	Username          string           `json:"username"`
+	UsernameCMD       string           `json:"usernameCmd,omitempty"`
+	Password          string           `json:"password"`
+	PasswordCMD       string           `json:"passwordCmd,omitempty"`
+	XOAuth2           bool             `json:"xoauth2"`
+	OnNewMail         string           `json:"onNewMail"`
+	OnNewMailPost     string           `json:"onNewMailPost,omitempty"`
+	OnDeletedMail     string           `json:"onDeletedMail,omitempty"`
+	OnDeletedMailPost string           `json:"onDeletedMailPost,omitempty"`
+	Debug             bool             `json:"-"`
+	Boxes             []string         `json:"boxes"`
 }
 
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
-	Host          string           `json:"host"`
-	HostCMD       string           `json:"hostCmd,omitempty"`
-	Port          int              `json:"port"`
-	TLS           bool             `json:"tls,omitempty"`
-	TLSOptions    TLSOptionsStruct `json:"tlsOptions"`
-	Username      string           `json:"username"`
-	UsernameCMD   string           `json:"usernameCmd,omitempty"`
-	Alias         string           `json:"alias"`
-	Password      string           `json:"password"`
-	PasswordCMD   string           `json:"passwordCmd,omitempty"`
-	XOAuth2       bool             `json:"xoauth2"`
-	OnNewMail     string           `json:"onNewMail"`
-	OnNewMailPost string           `json:"onNewMailPost,omitempty"`
-	Debug         bool             `json:"-"`
-	Boxes         []Box            `json:"boxes"`
+	Host              string           `json:"host"`
+	HostCMD           string           `json:"hostCmd,omitempty"`
+	Port              int              `json:"port"`
+	TLS               bool             `json:"tls,omitempty"`
+	TLSOptions        TLSOptionsStruct `json:"tlsOption"`
+	Username          string           `json:"username"`
+	UsernameCMD       string           `json:"usernameCmd,omitempty"`
+	Alias             string           `json:"alias"`
+	Password          string           `json:"password"`
+	PasswordCMD       string           `json:"passwordCmd,omitempty"`
+	XOAuth2           bool             `json:"xoauth2"`
+	OnNewMail         string           `json:"onNewMail"`
+	OnNewMailPost     string           `json:"onNewMailPost,omitempty"`
+	OnDeletedMail     string           `json:"onDeletedMail,omitempty"`
+	OnDeletedMailPost string           `json:"onDeletedMailPost,omitempty"`
+	Debug             bool             `json:"-"`
+	Boxes             []Box            `json:"boxes"`
 }
 
 type TLSOptionsStruct struct {
@@ -72,10 +94,14 @@ IDLEEvent handler routine, in order to schedule commands and
 print informative messages
 */
 type Box struct {
-	Alias         string `json:"-"`
-	Mailbox       string `json:"mailbox"`
-	OnNewMail     string `json:"onNewMail"`
-	OnNewMailPost string `json:"onNewMailPost"`
+	Alias             string    `json:"-"`
+	Mailbox           string    `json:"mailbox"`
+	Reason            EventType `json:"-"`
+	OnNewMail         string    `json:"OnNewMail"`
+	OnNewMailPost     string    `json:"onNewMailPost"`
+	OnDeletedMail     string    `json:"onDeletedMail"`
+	OnDeletedMailPost string    `json:"onDeletedMailPost"`
+	ExistingEmail     uint32    `json:"-"`
 }
 
 type configurationError struct {
@@ -113,6 +139,8 @@ func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
 	c.XOAuth2 = conf.XOAuth2
 	c.OnNewMail = conf.OnNewMail
 	c.OnNewMailPost = conf.OnNewMailPost
+	c.OnDeletedMail = conf.OnDeletedMail
+	c.OnDeletedMailPost = conf.OnDeletedMailPost
 	for _, mailbox := range conf.Boxes {
 		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
 	}
