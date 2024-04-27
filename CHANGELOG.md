@@ -7,4 +7,6 @@
 ### Fixes
 - Resolve "Improve/re-do changelog"
 
+
 [Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.3.14...HEAD
+[2.3.14]: https://gitlab.com/shackra/goimapnotify/compare/2.3.13...2.3.14

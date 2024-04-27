@@ -15,4 +15,7 @@ LDFLAGS := -X main.commit=$(GIT_COMMIT) -X main.gittag=$(GIT_TAG) -X main.branch
 build:
 	go build -ldflags "$(LDFLAGS)"
 
+changelog:
+	git-chglog -o README.md 2.3.14..
+
 # end
