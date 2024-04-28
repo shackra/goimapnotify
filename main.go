@@ -47,7 +47,7 @@ func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String("conf", filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"), "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
-	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this may leak passwords !!)")
+	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this won't leak your credentials !!)")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
 
 	flag.Parse()
@@ -88,7 +88,11 @@ func main() {
 		config[i] = retrieveCmd(config[i])
 		config[i].Debug = *debug
 		if config[i].Alias == "" {
-			config[i].Alias = config[i].Username
+			if *debug {
+				config[i].Alias = censorEmailAddress(config[i].Username)
+			} else {
+				config[i].Alias = config[i].Username
+			}
 		}
 
 		if *list {

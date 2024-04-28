@@ -19,9 +19,12 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/emersion/go-imap-idle"
+	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-sasl"
 )
@@ -46,7 +49,20 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 
 	// turn on debugging
 	if conf.Debug {
-		c.SetDebug(os.Stdout)
+		pr, pw := io.Pipe()
+
+		sigChan := make(chan os.Signal, 1)
+
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			<-sigChan
+			pr.Close() // close the pipe when the program is about to close
+		}()
+
+		go censorCredentials(pr, os.Stdout)
+
+		c.SetDebug(pw)
 	}
 
 	if conf.TLS && conf.TLSOptions.STARTTLS {
