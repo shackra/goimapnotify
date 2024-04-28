@@ -93,7 +93,7 @@ You can also use xoauth2 instead of password based authentication by setting the
       -conf string
             Configuration file (default "${HOME}/.config/goimapnotify/goimapnotify.conf")
       -debug
-            Output all network activity to the terminal (!! this may leak passwords !!)
+            Output all network activity to the terminal (!! this won't leak your credentials !!)
       -list
             List all mailboxes and exit
       -wait int
