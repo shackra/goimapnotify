@@ -5,6 +5,9 @@
 - Remove privacy alert in command description
 - Display a message asking for donations :D
 
+### Features
+- Add Code of Conduct
+
 
 <a name="2.3.15"></a>
 ## [2.3.15] - 2024-04-27
