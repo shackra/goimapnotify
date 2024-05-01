@@ -50,7 +50,7 @@
           packages = with pkgs; [
             nixpkgs-fmt
 
-            go_1_20
+            go
             gopls
             golines
             golangci-lint
