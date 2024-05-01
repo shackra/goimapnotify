@@ -54,7 +54,7 @@ func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String("conf", filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"), "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
-	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this won't leak your credentials !!)")
+	debug := flag.Bool("debug", false, "Output all network activity to the terminal")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
 
 	flag.Usage = usage
