@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2022  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2024  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
