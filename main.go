@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -43,12 +44,21 @@ func getDefaultConfigPath() string {
 	return filepath.Join(home, "goimapnotify")
 }
 
+func usage() {
+	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+	flag.PrintDefaults()
+	msg := donateMessage(8)
+	fmt.Fprint(flag.CommandLine.Output(), "\n"+msg)
+}
+
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String("conf", filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"), "Configuration file")
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	debug := flag.Bool("debug", false, "Output all network activity to the terminal (!! this won't leak your credentials !!)")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
+
+	flag.Usage = usage
 
 	flag.Parse()
 
@@ -160,5 +170,6 @@ func main() {
 	}
 	logrus.Info("Waiting other goroutines to stop...")
 	wg.Wait()
+	printDonate(os.Stdout, 11)
 	logrus.Info("Bye")
 }

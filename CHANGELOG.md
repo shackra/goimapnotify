@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Changes
+- Display a message asking for donations :D
+
 
 <a name="2.3.15"></a>
 ## [2.3.15] - 2024-04-27
