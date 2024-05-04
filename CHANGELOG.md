@@ -6,6 +6,7 @@
 - Display a message asking for donations :D
 
 ### Features
+- Send IMAP ID
 - Add Code of Conduct
 
 
