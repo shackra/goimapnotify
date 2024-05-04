@@ -24,6 +24,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	imapid "github.com/emersion/go-imap-id"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-sasl"
@@ -78,6 +79,14 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	idClient := imapid.NewClient(c)
+	if _, err := idClient.ID(imapid.ID{
+		imapid.FieldName:    "goimapnotify",
+		imapid.FieldVersion: gittag,
+	}); err != nil {
+		return nil, err
 	}
 
 	if conf.XOAuth2 {
