@@ -9,6 +9,9 @@
 - Send IMAP ID
 - Add Code of Conduct
 
+### Fixes
+- Missing commas in the JSON example in README.md
+
 
 <a name="2.3.15"></a>
 ## [2.3.15] - 2024-04-27
