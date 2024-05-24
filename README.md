@@ -15,7 +15,7 @@ This application is mostly compatible with the configuration of [imapnotify made
       "port": 143,
       "tls": true,
       "tlsOptions": {
-        "rejectUnauthorized": false
+        "rejectUnauthorized": false,
         "starttls": true
       },
       "username": "USERNAME",
@@ -36,7 +36,7 @@ This application is mostly compatible with the configuration of [imapnotify made
       "port": 993,
       "tls": true,
       "tlsOptions": {
-        "rejectUnauthorized": true
+        "rejectUnauthorized": true,
         "starttls": true
       },
       "username": "",
