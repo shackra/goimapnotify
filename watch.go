@@ -73,13 +73,13 @@ func (w *WatchMailBox) Watch() {
 		select {
 		case update := <-updates:
 			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
-				if m.Mailbox.Messages > w.box.ExistingEmail {
+				if m.Mailbox.Messages >= w.box.ExistingEmail {
 					// messages arrived
 					w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
 				} else {
 					// messages deleted
 					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
-				} // NOTE: What if the number is the same as before?
+				}
 				logrus.Debugf("[%s:%s] Existing mail from %d to %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail, m.Mailbox.Messages)
 				w.box.ExistingEmail = m.Mailbox.Messages
 			}
