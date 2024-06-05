@@ -2,6 +2,7 @@
 ## [Unreleased]
 
 ### Changes
+- Change installation instructions
 - Remove privacy alert in command description
 - Display a message asking for donations :D
 
