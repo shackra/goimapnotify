@@ -37,11 +37,11 @@ func donateMessage(padding int) string {
 	white := color.New(color.FgWhite, color.Bold)
 
 	// line
-	msg += white.Sprintf("%*sIf you like this project, consider making a donation \n", padding, " ")
+	msg += white.Sprintf("%*s✨ If you like this project, consider making a donation \n", padding, " ")
 	// line
 	msg += white.Sprintf("%*sto the author at ", padding, " ")
 	msg += magenta.Sprint("https://ko-fi.com/K3K1XEZCQ")
-	msg += white.Sprint(" :D\n")
+	msg += white.Sprint(" :D ✨\n")
 	// end
 
 	return msg
