@@ -58,6 +58,8 @@
             golangci-lint
             golangci-lint-langserver
             gomodifytags
+            delve
+            gdlv
 
             nodePackages_latest.bash-language-server
 
