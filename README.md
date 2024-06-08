@@ -8,59 +8,49 @@ Please read the `CHANGELOG` file to know what's new.
 
 This application is mostly compatible with the configuration of [imapnotify made with Python](https://github.com/a-sk/python-imapnotify) (be sure to change `password_eval` to `passwordCMD`, see [issue #3](https://gitlab.com/shackra/goimapnotify/issues/3)), the following are all options available for the configuration:
 
-```json
-[
-    {
-      "host": "example.com",
-      "port": 143,
-      "tls": true,
-      "tlsOptions": {
-        "rejectUnauthorized": false,
-        "starttls": true
-      },
-      "username": "USERNAME",
-      "alias": "ExampleCOM",
-      "password": "PASSWORD",
-      "xoAuth2": false,
-      "boxes": [
-            {
-                "mailbox" : "INBOX",
-                "onNewMail": "mbsync examplecom:INBOX",
-                "onNewMailPost": "SKIP"
-            }
-      ]
-    },
-    {
-      "hostCMD": "COMMAND_TO_RETRIEVE_HOST",
-      "port": 993,
-      "tls": true,
-      "tlsOptions": {
-        "rejectUnauthorized": true,
-        "starttls": true
-      },
-      "username": "",
-      "usernameCMD": "",
-      "password": "",
-      "passwordCMD": "",
-      "xoAuth2": false,
-      "onNewMail": "",
-      "onNewMailPost": "",
-      "onDeletedMail": "",
-      "onDeletedMailPost": "",
-      "boxes": [
-            {
-                "mailbox" : "INBOX",
-                "onNewMail": "mbsync examplenet:INBOX",
-                "onNewMailPost": "SKIP"
-            },
-            {
-                "mailbox" : "Junk",
-                "onNewMail": "mbsync examplenet:Junk",
-                "onNewMailPost": "SKIP"
-            }
-      ]
-    }
-]
+```yaml
+configurations:
+    -
+        host: example.com
+        port: 143
+        tls: true
+        tlsOptions:
+            rejectUnauthorized: false
+            starttls: true
+        username: USERNAME
+        alias: ExampleCOM
+        password: PASSWORD
+        xoAuth2: false
+        boxes:
+            -
+                mailbox: INBOX
+                onNewMail: 'mbsync examplecom:INBOX'
+                onNewMailPost: SKIP
+    -
+        hostCMD: COMMAND_TO_RETRIEVE_HOST
+        port: 993
+        tls: true
+        tlsOptions:
+            rejectUnauthorized: true
+            starttls: true
+        username: ''
+        usernameCMD: ''
+        password: ''
+        passwordCMD: ''
+        xoAuth2: false
+        onNewMail: ''
+        onNewMailPost: ''
+        onDeletedMail: ''
+        onDeletedMailPost: ''
+        boxes:
+            -
+                mailbox: INBOX
+                onNewMail: 'mbsync examplenet:INBOX'
+                onNewMailPost: SKIP
+            -
+                mailbox: Junk
+                onNewMail: 'mbsync examplenet:Junk'
+                onNewMailPost: SKIP
 ```
 
 On first start, the application will run `onNewMail` and `onNewMailPost` and then wait for events from your IMAP server.
