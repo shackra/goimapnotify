@@ -55,6 +55,7 @@
             golines
             golangci-lint
             golangci-lint-langserver
+            gomodifytags
 
             nodePackages_latest.bash-language-server
 
