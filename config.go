@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -141,6 +142,7 @@ func loadConfiguration(path string) (Configuration, error) {
 			return Configuration{}, fmt.Errorf("Can't parse the configuration in 'legacy' format: %s, error: %v", path, err)
 		}
 
+		logrus.Info("legacy format configuration detected")
 		topConfiguration.Configurations = legacyConverter(legacy)
 	}
 
