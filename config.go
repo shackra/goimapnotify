@@ -81,7 +81,7 @@ type NotifyConfig struct {
 	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
 	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
-	Debug             bool             `yaml:"debug" json:"debug"`
+	Debug             bool             `yaml:"-" json:"-"`
 	Boxes             []Box            `yaml:"boxes" json:"boxes"`
 }
 
