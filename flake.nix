@@ -46,6 +46,8 @@
       # Development environments
       devShells = forEachSupportedSystem ({ pkgs, system }: {
         default = pkgs.mkShell {
+          # Environment variables
+          env = { CGO_CFLAGS = "-O2 -g -Wno-error"; };
           # Pinned packages available in the environment
           packages = with pkgs; [
             nixpkgs-fmt
