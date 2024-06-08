@@ -6,7 +6,7 @@ Please read the `CHANGELOG` file to know what's new.
 
 🗊 **You can also check what's new at ko-fi, read in English or Spanish**: https://ko-fi.com/shackra/posts
 
-This application is mostly compatible with the configuration of [imapnotify made with Python](https://github.com/a-sk/python-imapnotify) (be sure to change `password_eval` to `passwordCmd`, see [issue #3](https://gitlab.com/shackra/goimapnotify/issues/3)), the following are all options available for the configuration:
+This application is mostly compatible with the configuration of [imapnotify made with Python](https://github.com/a-sk/python-imapnotify) (be sure to change `password_eval` to `passwordCMD`, see [issue #3](https://gitlab.com/shackra/goimapnotify/issues/3)), the following are all options available for the configuration:
 
 ```json
 [
@@ -21,8 +21,7 @@ This application is mostly compatible with the configuration of [imapnotify made
       "username": "USERNAME",
       "alias": "ExampleCOM",
       "password": "PASSWORD",
-      "xoauth2": false,
-      "wait": 1,
+      "xoAuth2": false,
       "boxes": [
             {
                 "mailbox" : "INBOX",
@@ -32,7 +31,7 @@ This application is mostly compatible with the configuration of [imapnotify made
       ]
     },
     {
-      "hostCmd": "COMMAND_TO_RETRIEVE_HOST",
+      "hostCMD": "COMMAND_TO_RETRIEVE_HOST",
       "port": 993,
       "tls": true,
       "tlsOptions": {
@@ -40,15 +39,14 @@ This application is mostly compatible with the configuration of [imapnotify made
         "starttls": true
       },
       "username": "",
-      "usernameCmd": "",
+      "usernameCMD": "",
       "password": "",
-      "passwordCmd": "",
-      "xoauth2": false,
+      "passwordCMD": "",
+      "xoAuth2": false,
       "onNewMail": "",
       "onNewMailPost": "",
       "onDeletedMail": "",
       "onDeletedMailPost": "",
-      "wait": 20,
       "boxes": [
             {
                 "mailbox" : "INBOX",
@@ -71,17 +69,17 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 - `onNewMailPost`: is an executable or script to run after `onNewMail` has ran.
 - `onDeletedMail`: is an executable or script to run when mail has been delete.
 - `onDeletedMailPost`: is an executable or script to run after `onDeletedMail` has ran.
-- `hostCmd`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.
-- `usernameCmd`: is an executable or script that retrieves your username from somewhere, we cannot pass arguments to this command from `Stdin`.
-- `passwordCmd`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.
-- `xoauth2`: is an option that allow us to login on your IMAP using OAuth2, **be aware**: the token is retrieve from `passwordCmd` (see shackra/goimapnotify#9).
+- `hostCMD`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `usernameCMD`: is an executable or script that retrieves your username from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `passwordCMD`: is an executable or script that retrieves your password from somewhere, we cannot pass arguments to this command from `Stdin`.
+- `xoAuth2`: is an option that allow us to login on your IMAP using OAuth2, **be aware**: the token is retrieve from `passwordCMD` (see shackra/goimapnotify#9).
 - `wait`: is the delay in seconds before the mail syncing is trigger (see shackra/goimapnotify#10).
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 
 If your host do not offer IDLE, a sane default of checking every 15 minutes will take place instead.
 
-You can also use xoauth2 instead of password based authentication by setting the `xoauth2` option to `true` and the output of a tool which can provide xoauth2 encoded tokens in `passwordCmd`. Examples: [Google oauth2l](https://github.com/google/oauth2l) or [xoauth2 fetcher for O365](https://github.com/harishkrupo/oauth2ms).
+You can also use xoAuth2 instead of password based authentication by setting the `xoAuth2` option to `true` and the output of a tool which can provide xoAuth2 encoded tokens in `passwordCMD`. Examples: [Google oauth2l](https://github.com/google/oauth2l) or [xoauth2 fetcher for O365](https://github.com/harishkrupo/oauth2ms).
 
 ## Install
 
