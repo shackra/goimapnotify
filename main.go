@@ -53,7 +53,11 @@ func usage() {
 
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
-	fileconf := flag.String("conf", filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"), "Configuration file")
+	fileconf := flag.String(
+		"conf",
+		filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"),
+		"Configuration file",
+	)
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	debug := flag.Bool("debug", false, "Output all network activity to the terminal")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
@@ -73,16 +77,9 @@ func main() {
 		logrus.Fatalf("Can't read file: '%s', error: %v", *fileconf, err)
 	}
 
-	var config []NotifyConfig
-	if err := viper.Unmarshal(&config); err != nil {
-		var configLegacy NotifyConfigLegacy
-		err = viper.Unmarshal(&configLegacy)
-		if err != nil {
-			logrus.Fatalf("Can't parse the configuration: %s, error: %v", *fileconf, err)
-		} else {
-			logrus.Warnf("Legacy configuration format detected")
-			config = legacyConverter(configLegacy)
-		}
+	topConfig, err := loadConfiguration(*fileconf)
+	if err != nil {
+		logrus.Fatalf("can't load the configuration: %v", err)
 	}
 	logrus.Debugf("configuration loaded successfuly: %s", *fileconf)
 
@@ -95,22 +92,24 @@ func main() {
 	wg := &sync.WaitGroup{}
 
 	// indexes used because we need to change struct data
-	for i := range config {
-		config[i].Debug = *debug
-		config[i] = retrieveCmd(config[i])
-		if config[i].Alias == "" {
+	for i := range topConfig.Configurations {
+		topConfig.Configurations[i].Debug = *debug
+		topConfig.Configurations[i] = retrieveCmd(topConfig.Configurations[i])
+		if topConfig.Configurations[i].Alias == "" {
 			if *debug {
-				config[i].Alias = censorEmailAddress(config[i].Username)
+				topConfig.Configurations[i].Alias = censorEmailAddress(
+					topConfig.Configurations[i].Username,
+				)
 			} else {
-				config[i].Alias = config[i].Username
+				topConfig.Configurations[i].Alias = topConfig.Configurations[i].Username
 			}
 		}
 
 		if *list {
-			client, cErr := newClient(config[i])
+			client, cErr := newClient(topConfig.Configurations[i])
 			if cErr != nil {
 				logrus.Fatalf("[%s] Something went wrong creating IMAP client: %s",
-					config[i].Alias, cErr)
+					topConfig.Configurations[i].Alias, cErr)
 			}
 			// nolint
 			defer client.Logout()
@@ -121,21 +120,21 @@ func main() {
 			// launch watchers for all mailboxes
 			// listen in "boxes"
 
-			for j := range config[i].Boxes {
+			for j := range topConfig.Configurations[i].Boxes {
 				/*
 				 * Copy default names if empty. Use SKIP to skip execution
 				 * The check is happening in running.go:run
 				 */
-				config[i].Boxes[j] = setFromConfig(config[i], config[i].Boxes[j])
-				client, iErr := newIMAPIDLEClient(config[i])
+				topConfig.Configurations[i].Boxes[j] = setFromConfig(topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j])
+				client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
 				if iErr != nil {
 					logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s",
-						config[i].Boxes[j].Alias, config[i].Boxes[j].Mailbox, iErr)
+						topConfig.Configurations[i].Boxes[j].Alias, topConfig.Configurations[i].Boxes[j].Mailbox, iErr)
 				}
-				box := config[i].Boxes[j]
+				box := topConfig.Configurations[i].Boxes[j]
 				key := box.Alias + box.Mailbox
 				running.mutex[key] = new(sync.RWMutex)
-				NewWatchBox(client, config[i], config[i].Boxes[j],
+				NewWatchBox(client, topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j],
 					idleChan, boxChan, doneChan, wg)
 			}
 		}

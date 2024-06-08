@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+
+	"github.com/spf13/viper"
+)
+
 // This file is part of goimapnotify
 // Copyright (C) 2017-2024	Jorge Javier Araya Navarro
 
@@ -34,8 +40,12 @@ func (e EventType) String() string {
 	}
 }
 
-// NotifyConfigLegacy holds the old configuration format
-type NotifyConfigLegacy struct {
+type Configuration struct {
+	Configurations []NotifyConfig `json:"configurations" yaml:"configurations"`
+}
+
+// ConfigurationLegacy holds the old configuration format
+type ConfigurationLegacy struct {
 	Host              string           `yaml:"host" json:"host"`
 	HostCMD           string           `yaml:"hostCMD" json:"hostCMD"`
 	Port              int              `yaml:"port" json:"port"`
@@ -96,7 +106,7 @@ type Box struct {
 	ExistingEmail     uint32    `json:"-" yaml:"-"`
 }
 
-func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
+func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
 	var r []NotifyConfig
 	var c NotifyConfig
 	c.Host = conf.Host
@@ -117,4 +127,26 @@ func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
 		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
 	}
 	return append(r, c)
+}
+
+func loadConfiguration(path string) (Configuration, error) {
+	var topConfiguration Configuration
+	if err := viper.Unmarshal(&topConfiguration); err != nil {
+		return Configuration{}, fmt.Errorf("Can't parse the configuration: %s, error: %v", path, err)
+	}
+
+	if topConfiguration.Configurations == nil {
+		var legacy ConfigurationLegacy
+		if err := viper.UnmarshalExact(&legacy); err != nil {
+			return Configuration{}, fmt.Errorf("Can't parse the configuration in 'legacy' format: %s, error: %v", path, err)
+		}
+
+		topConfiguration.Configurations = legacyConverter(legacy)
+	}
+
+	if len(topConfiguration.Configurations) > 0 && topConfiguration.Configurations[0].Boxes == nil {
+		return Configuration{}, fmt.Errorf("configuration file '%s' is empty or have invalid configuration format", path)
+	}
+
+	return topConfiguration, nil
 }
