@@ -2,12 +2,52 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch goimapnotify for debugging",
+      "name": "goimapnotify: launch with YAML configuration for debugging",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}",
-      "args": ["-conf", "./local.conf", "-debug"]
+      "args": ["-conf", "./local.yaml", "-debug"]
+    },
+    {
+      "name": "goimapnotify: launch with YAML configuration with multiple hosts for debugging",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": ["-conf", "./local_multi.yaml", "-debug"]
+    },
+    {
+      "name": "goimapnotify: launch with empty YAML for debugging",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": ["-conf", "./local_empty.yaml", "-debug"]
+    },
+    {
+      "name": "goimapnotify: launch with JSON configuration for debugging",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": ["-conf", "./local.json", "-debug"]
+    },
+    {
+      "name": "goimapnotify: launch with JSON configuration with multiple hosts for debugging",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": ["-conf", "./local_multi.json", "-debug"]
+    },
+    {
+      "name": "goimapnotify: launch with empty JSON for debugging",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "args": ["-conf", "./local_empty.json", "-debug"]
     }
   ]
 }

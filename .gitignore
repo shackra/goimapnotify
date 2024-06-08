@@ -227,5 +227,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/emacs,linux,macos,windows,go,python
-/local*.conf
+/local*.*
 /.pre-commit-config.yaml
