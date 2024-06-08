@@ -7,6 +7,7 @@
 - Display a message asking for donations :D
 
 ### Features
+- Add YAML support
 - Send IMAP ID
 - Add Code of Conduct
 
