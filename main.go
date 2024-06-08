@@ -17,7 +17,6 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -27,6 +26,7 @@ import (
 	"syscall"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -68,22 +68,23 @@ func main() {
 	}
 	logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
 
-	raw, err := os.ReadFile(*fileconf)
-	if err != nil {
-		logrus.Fatalf("Can't read file: %s", err)
+	viper.SetConfigFile(*fileconf)
+	if err := viper.ReadInConfig(); err != nil {
+		logrus.Fatalf("Can't read file: '%s', error: %v", *fileconf, err)
 	}
+
 	var config []NotifyConfig
-	err = json.Unmarshal(raw, &config)
-	if err != nil {
+	if err := viper.Unmarshal(&config); err != nil {
 		var configLegacy NotifyConfigLegacy
-		err = json.Unmarshal(raw, &configLegacy)
+		err = viper.Unmarshal(&configLegacy)
 		if err != nil {
-			logrus.Fatalf("Can't parse the configuration: %s", err)
+			logrus.Fatalf("Can't parse the configuration: %s, error: %v", *fileconf, err)
 		} else {
 			logrus.Warnf("Legacy configuration format detected")
 			config = legacyConverter(configLegacy)
 		}
 	}
+	logrus.Debugf("configuration loaded successfuly: %s", *fileconf)
 
 	idleChan := make(chan IDLEEvent)
 	boxChan := make(chan BoxEvent, 1)
@@ -95,8 +96,8 @@ func main() {
 
 	// indexes used because we need to change struct data
 	for i := range config {
-		config[i] = retrieveCmd(config[i])
 		config[i].Debug = *debug
+		config[i] = retrieveCmd(config[i])
 		if config[i].Alias == "" {
 			if *debug {
 				config[i].Alias = censorEmailAddress(config[i].Username)
