@@ -26,6 +26,7 @@ import (
 	"syscall"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -52,7 +53,11 @@ func usage() {
 
 func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
-	fileconf := flag.String("conf", filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"), "Configuration file")
+	fileconf := flag.String(
+		"conf",
+		filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"),
+		"Configuration file",
+	)
 	list := flag.Bool("list", false, "List all mailboxes and exit")
 	debug := flag.Bool("debug", false, "Output all network activity to the terminal")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
@@ -67,10 +72,16 @@ func main() {
 	}
 	logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
 
-	raw, err := os.ReadFile(*fileconf)
-	if err != nil {
-		logrus.WithError(err).Fatalln("Can't read file")
+	viper.SetConfigFile(*fileconf)
+	if err := viper.ReadInConfig(); err != nil {
+		logrus.Fatalf("Can't read file: '%s', error: %v", *fileconf, err)
 	}
+
+	topConfig, err := loadConfiguration(*fileconf)
+	if err != nil {
+		logrus.Fatalf("can't load the configuration: %v", err)
+	}
+	logrus.Debugf("configuration loaded successfuly: %s", *fileconf)
 
 	idleChan := make(chan IDLEEvent)
 	boxChan := make(chan BoxEvent, 1)
@@ -80,27 +91,25 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	wg := &sync.WaitGroup{}
 
-	config, err := loadConfig(raw, *debug)
-	if err != nil {
-		logrus.WithError(err).Fatal("Cannot read configuration")
-	}
-
 	// indexes used because we need to change struct data
-	for i := range config {
-		config[i] = retrieveCmd(config[i])
-		config[i].Debug = *debug
-		if config[i].Alias == "" {
+	for i := range topConfig.Configurations {
+		topConfig.Configurations[i].Debug = *debug
+		topConfig.Configurations[i] = retrieveCmd(topConfig.Configurations[i])
+		if topConfig.Configurations[i].Alias == "" {
 			if *debug {
-				config[i].Alias = censorEmailAddress(config[i].Username)
+				topConfig.Configurations[i].Alias = censorEmailAddress(
+					topConfig.Configurations[i].Username,
+				)
 			} else {
-				config[i].Alias = config[i].Username
+				topConfig.Configurations[i].Alias = topConfig.Configurations[i].Username
 			}
 		}
 
 		if *list {
-			client, cErr := newClient(config[i])
+			client, cErr := newClient(topConfig.Configurations[i])
 			if cErr != nil {
-				l.WithError(cErr).Fatal("Something went wrong creating IMAP client")
+				logrus.Fatalf("[%s] Something went wrong creating IMAP client: %v",
+					topConfig.Configurations[i].Alias, cErr)
 			}
 			// nolint
 			defer client.Logout()
@@ -111,17 +120,22 @@ func main() {
 			// launch watchers for all mailboxes
 			// listen in "boxes"
 
-			for j := range config[i].Boxes {
-				l = l.WithField("mailbox", config[i].Boxes[j].Mailbox)
-
-				client, iErr := newIMAPIDLEClient(config[i])
+			for j := range topConfig.Configurations[i].Boxes {
+				/*
+				 * Copy default names if empty. Use SKIP to skip execution
+				 * The check is happening in running.go:run
+				 */
+				topConfig.Configurations[i].Boxes[j] = setFromConfig(topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j])
+				client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
 				if iErr != nil {
-					l.WithError(iErr).Fatal("Something went wrong creating IDLE client")
+					logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %v",
+						topConfig.Configurations[i].Boxes[j].Alias, topConfig.Configurations[i].Boxes[j].Mailbox, iErr)
 				}
-				box := config[i].Boxes[j]
+				box := topConfig.Configurations[i].Boxes[j]
 				key := box.Alias + box.Mailbox
 				running.mutex[key] = new(sync.RWMutex)
-				NewWatchBox(client, config[i], box, idleChan, boxChan, doneChan, wg)
+				NewWatchBox(client, topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j],
+					idleChan, boxChan, doneChan, wg)
 			}
 		}
 	}

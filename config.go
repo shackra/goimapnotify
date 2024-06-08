@@ -1,11 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // This file is part of goimapnotify
@@ -42,50 +41,54 @@ func (e EventType) String() string {
 	}
 }
 
-// NotifyConfigLegacy holds the old configuration format
-type NotifyConfigLegacy struct {
-	Host              string           `json:"host"`
-	HostCMD           string           `json:"hostCmd,omitempty"`
-	Port              int              `json:"port"`
-	TLS               bool             `json:"tls,omitempty"`
-	TLSOptions        TLSOptionsStruct `json:"tlsOption"`
-	Username          string           `json:"username"`
-	UsernameCMD       string           `json:"usernameCmd,omitempty"`
-	Password          string           `json:"password"`
-	PasswordCMD       string           `json:"passwordCmd,omitempty"`
-	XOAuth2           bool             `json:"xoauth2"`
-	OnNewMail         string           `json:"onNewMail"`
-	OnNewMailPost     string           `json:"onNewMailPost,omitempty"`
-	OnDeletedMail     string           `json:"onDeletedMail,omitempty"`
-	OnDeletedMailPost string           `json:"onDeletedMailPost,omitempty"`
-	Debug             bool             `json:"-"`
-	Boxes             []string         `json:"boxes"`
+type Configuration struct {
+	Configurations []NotifyConfig `json:"configurations" yaml:"configurations"`
+}
+
+// ConfigurationLegacy holds the old configuration format
+type ConfigurationLegacy struct {
+	Host              string           `yaml:"host" json:"host"`
+	HostCMD           string           `yaml:"hostCMD" json:"hostCMD"`
+	Port              int              `yaml:"port" json:"port"`
+	TLS               bool             `yaml:"tls" json:"tls"`
+	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions" json:"tlsOptions"`
+	Username          string           `yaml:"username" json:"username"`
+	UsernameCMD       string           `yaml:"usernameCMD" json:"usernameCMD"`
+	Password          string           `yaml:"password" json:"password"`
+	PasswordCMD       string           `yaml:"passwordCMD" json:"passwordCMD"`
+	XOAuth2           bool             `yaml:"xoAuth2" json:"xoAuth2"`
+	OnNewMail         string           `yaml:"onNewMail" json:"onNewMail"`
+	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
+	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
+	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
+	Debug             bool             `yaml:"-" json:"-"`
+	Boxes             []string         `yaml:"boxes" json:"boxes"`
 }
 
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
-	Host              string           `json:"host"`
-	HostCMD           string           `json:"hostCmd,omitempty"`
-	Port              int              `json:"port"`
-	TLS               bool             `json:"tls,omitempty"`
-	TLSOptions        TLSOptionsStruct `json:"tlsOption"`
-	Username          string           `json:"username"`
-	UsernameCMD       string           `json:"usernameCmd,omitempty"`
-	Alias             string           `json:"alias"`
-	Password          string           `json:"password"`
-	PasswordCMD       string           `json:"passwordCmd,omitempty"`
-	XOAuth2           bool             `json:"xoauth2"`
-	OnNewMail         string           `json:"onNewMail"`
-	OnNewMailPost     string           `json:"onNewMailPost,omitempty"`
-	OnDeletedMail     string           `json:"onDeletedMail,omitempty"`
-	OnDeletedMailPost string           `json:"onDeletedMailPost,omitempty"`
-	Debug             bool             `json:"-"`
-	Boxes             []Box            `json:"boxes"`
+	Host              string           `yaml:"host" json:"host"`
+	HostCMD           string           `yaml:"hostCMD" json:"hostCMD"`
+	Port              int              `yaml:"port" json:"port"`
+	TLS               bool             `yaml:"tls" json:"tls"`
+	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions" json:"tlsOptions"`
+	Username          string           `yaml:"username" json:"username"`
+	UsernameCMD       string           `yaml:"usernameCMD" json:"usernameCMD"`
+	Alias             string           `yaml:"alias" json:"alias"`
+	Password          string           `yaml:"password" json:"password"`
+	PasswordCMD       string           `yaml:"passwordCMD" json:"passwordCMD"`
+	XOAuth2           bool             `yaml:"xoAuth2" json:"xoAuth2"`
+	OnNewMail         string           `yaml:"onNewMail" json:"onNewMail"`
+	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
+	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
+	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
+	Debug             bool             `yaml:"-" json:"-"`
+	Boxes             []Box            `yaml:"boxes" json:"boxes"`
 }
 
 type TLSOptionsStruct struct {
-	RejectUnauthorized bool `json:"reject_unauthorized"`
-	STARTTLS           bool `json:"starttls"`
+	RejectUnauthorized bool `yaml:"rejectUnauthorized" json:"rejectUnauthorized"`
+	STARTTLS           bool `yaml:"starttls" json:"starttls"`
 }
 
 /*
@@ -94,37 +97,17 @@ IDLEEvent handler routine, in order to schedule commands and
 print informative messages
 */
 type Box struct {
-	Alias             string    `json:"-"`
-	Mailbox           string    `json:"mailbox"`
-	Reason            EventType `json:"-"`
-	OnNewMail         string    `json:"OnNewMail"`
-	OnNewMailPost     string    `json:"onNewMailPost"`
-	OnDeletedMail     string    `json:"onDeletedMail"`
-	OnDeletedMailPost string    `json:"onDeletedMailPost"`
-	ExistingEmail     uint32    `json:"-"`
+	Alias             string    `json:"-" yaml:"-"`
+	Mailbox           string    `yaml:"mailbox" json:"mailbox"`
+	Reason            EventType `json:"-" yaml:"-"`
+	OnNewMail         string    `yaml:"onNewMail" json:"onNewMail"`
+	OnNewMailPost     string    `yaml:"onNewMailPost" json:"onNewMailPost"`
+	OnDeletedMail     string    `yaml:"onDeletedMail" json:"onDeletedMail"`
+	OnDeletedMailPost string    `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
+	ExistingEmail     uint32    `json:"-" yaml:"-"`
 }
 
-type configurationError struct {
-	errors []error
-}
-
-func (c *configurationError) Error() string {
-	var found []string
-	for _, v := range c.errors {
-		found = append(found, v.Error())
-	}
-	return fmt.Sprintf("When trying to load the configuration we found the following issues > %s", strings.Join(found, "; "))
-}
-
-func (c *configurationError) Push(err error) {
-	c.errors = append(c.errors, err)
-}
-
-func newConfigurationError(err error) *configurationError {
-	return &configurationError{[]error{err}}
-}
-
-func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
+func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
 	var r []NotifyConfig
 	var c NotifyConfig
 	c.Host = conf.Host
@@ -147,32 +130,25 @@ func legacyConverter(conf NotifyConfigLegacy) []NotifyConfig {
 	return append(r, c)
 }
 
-func loadConfig(d []byte, debugging bool) ([]NotifyConfig, error) {
-	var config []NotifyConfig
-	err := json.Unmarshal(d, &config)
-	if err != nil {
-		confErrs := newConfigurationError(err)
-		var configLegacy NotifyConfigLegacy
-		err = json.Unmarshal(d, &configLegacy)
-		if err != nil {
-			confErrs.Push(err)
-			return nil, confErrs
-		} else {
-			logrus.Infoln("Legacy configuration format detected")
-			config = legacyConverter(configLegacy)
-		}
+func loadConfiguration(path string) (Configuration, error) {
+	var topConfiguration Configuration
+	if err := viper.Unmarshal(&topConfiguration); err != nil {
+		return Configuration{}, fmt.Errorf("Can't parse the configuration: %s, error: %v", path, err)
 	}
 
-	for i := range config {
-		config[i] = retrieveCmd(config[i])
-		config[i].Debug = debugging
-		if config[i].Alias == "" {
-			config[i].Alias = config[i].Username
+	if topConfiguration.Configurations == nil {
+		var legacy ConfigurationLegacy
+		if err := viper.UnmarshalExact(&legacy); err != nil {
+			return Configuration{}, fmt.Errorf("Can't parse the configuration in 'legacy' format: %s, error: %v", path, err)
 		}
-		for j := range config[i].Boxes {
-			config[i].Boxes[j] = setFromConfig(config[i], config[i].Boxes[j])
-		}
+
+		logrus.Info("legacy format configuration detected")
+		topConfiguration.Configurations = legacyConverter(legacy)
 	}
 
-	return config, nil
+	if len(topConfiguration.Configurations) > 0 && topConfiguration.Configurations[0].Boxes == nil {
+		return Configuration{}, fmt.Errorf("configuration file '%s' is empty or have invalid configuration format", path)
+	}
+
+	return topConfiguration, nil
 }
