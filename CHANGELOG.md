@@ -13,6 +13,7 @@
 - Add Code of Conduct
 
 ### Fixes
+- Resolve ambiguous TLS and config extension
 - Improve conditional check at watch.go
 - Missing commas in the JSON example in README.md
 
