@@ -66,6 +66,7 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 - `wait`: is the delay in seconds before the mail syncing is trigger (see shackra/goimapnotify#10).
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
+To enable TLS connection, set `tls` as `true` and `startTls` as `false`
 
 If your host do not offer IDLE, a sane default of checking every 15 minutes will take place instead.
 
