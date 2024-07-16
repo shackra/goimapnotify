@@ -55,7 +55,7 @@ func main() {
 	// imap.DefaultLogMask = imap.LogConn | imap.LogRaw
 	fileconf := flag.String(
 		"conf",
-		filepath.Join(getDefaultConfigPath(), "goimapnotify.conf"),
+		filepath.Join(getDefaultConfigPath(), fmt.Sprintf("goimapnotify.%s", viper.SupportedExts[2])),
 		"Configuration file",
 	)
 	list := flag.Bool("list", false, "List all mailboxes and exit")
