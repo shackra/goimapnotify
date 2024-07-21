@@ -77,12 +77,16 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 		}
 	}
 
-	idClient := imapid.NewClient(c)
-	if _, err := idClient.ID(imapid.ID{
-		imapid.FieldName:    "goimapnotify",
-		imapid.FieldVersion: gittag,
-	}); err != nil {
-		return nil, err
+	if ok, err := c.Support(imapid.Capability); err != nil {
+		return nil, fmt.Errorf("unable to check support for capability %s, error: %w", imapid.Capability, err)
+	} else if ok {
+		idClient := imapid.NewClient(c)
+		if _, err := idClient.ID(imapid.ID{
+			imapid.FieldName:    "goimapnotify",
+			imapid.FieldVersion: gittag,
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	if conf.XOAuth2 {
