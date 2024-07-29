@@ -170,6 +170,6 @@ func main() {
 	}
 	logrus.Info("Waiting other goroutines to stop...")
 	wg.Wait()
-	printDonate(os.Stdout, 11)
+	printDonate(os.Stderr, 11)
 	logrus.Info("Bye")
 }

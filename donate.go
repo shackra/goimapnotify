@@ -17,7 +17,6 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/fatih/color"
@@ -28,7 +27,7 @@ func printDonate(out io.Writer, padding int) {
 	white := color.New(color.FgWhite, color.Bold)
 	stars := white.Sprintf("%*s*****************************************************\n", padding, " ")
 
-	fmt.Print(stars + msg + stars)
+	out.Write([]byte(stars + msg + stars))
 }
 
 func donateMessage(padding int) string {
