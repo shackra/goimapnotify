@@ -13,6 +13,8 @@
 - Add Code of Conduct
 
 ### Fixes
+- Display donation message on stderr
+- Ensure the List call from `printDelimiter` finishes before returning
 - Resolve ambiguous TLS and config extension
 - Improve conditional check at watch.go
 - Missing commas in the JSON example in README.md
