@@ -22,8 +22,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"sync"
 	"syscall"
+
+	"github.com/emersion/go-imap"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -120,25 +123,63 @@ func main() {
 			}
 			_ = walkMailbox(client, "", 0, max)
 		} else {
-			// launch watchers for all mailboxes
-			// listen in "boxes"
-
-			for j := range topConfig.Configurations[i].Boxes {
-				/*
-				 * Copy default names if empty. Use SKIP to skip execution
-				 * The check is happening in running.go:run
-				 */
-				topConfig.Configurations[i].Boxes[j] = setFromConfig(topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j])
+			if len(topConfig.Configurations[i].Boxes) == 0 {
 				client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
 				if iErr != nil {
-					logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %v",
-						topConfig.Configurations[i].Boxes[j].Alias, topConfig.Configurations[i].Boxes[j].Mailbox, iErr)
+					logrus.Fatalf(iErr.Error())
 				}
-				box := topConfig.Configurations[i].Boxes[j]
-				key := box.Alias + box.Mailbox
-				running.mutex[key] = new(sync.RWMutex)
-				NewWatchBox(client, topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j],
-					idleChan, boxChan, doneChan, wg)
+				mailboxes := make(chan *imap.MailboxInfo, 10)
+				done := make(chan error, 1)
+				go func() {
+					done <- client.List("", "*", mailboxes)
+				}()
+				var mboxes []string
+
+				for m := range mailboxes {
+					if slices.Contains([]string{"[Gmail]", "[Gmail]/All Mail"}, m.Name) {
+						continue
+					}
+					mboxes = append(mboxes, m.Name)
+				}
+				for _, m := range mboxes {
+					client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
+					if iErr != nil {
+						logrus.Fatalf(iErr.Error())
+					}
+					nConf := topConfig.Configurations[i]
+					box := Box{
+						Alias:             nConf.Alias,
+						Mailbox:           m,
+						OnNewMail:         nConf.OnNewMail,
+						OnNewMailPost:     nConf.OnNewMailPost,
+						OnDeletedMail:     nConf.OnDeletedMail,
+						OnDeletedMailPost: nConf.OnDeletedMailPost,
+					}
+					key := box.Alias + box.Mailbox
+					running.mutex[key] = new(sync.RWMutex)
+					NewWatchBox(client, NotifyConfig{}, box, idleChan, boxChan, doneChan, wg)
+				}
+			} else {
+				// launch watchers for all mailboxes
+				// listen in "boxes"
+
+				for j := range topConfig.Configurations[i].Boxes {
+					/*
+					 * Copy default names if empty. Use SKIP to skip execution
+					 * The check is happening in running.go:run
+					 */
+					topConfig.Configurations[i].Boxes[j] = setFromConfig(topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j])
+					client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
+					if iErr != nil {
+						logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s",
+							topConfig.Configurations[i].Boxes[j].Alias, topConfig.Configurations[i].Boxes[j].Mailbox, iErr)
+					}
+					box := topConfig.Configurations[i].Boxes[j]
+					key := box.Alias + box.Mailbox
+					running.mutex[key] = new(sync.RWMutex)
+					NewWatchBox(client, topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j],
+						idleChan, boxChan, doneChan, wg)
+				}
 			}
 		}
 	}
