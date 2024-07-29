@@ -8,4 +8,9 @@
   - `refactor:`, for refactoring related things.
   - `BREAKING CHANGE`, this is a special keyword we hope is not used often :)
 
-/assign @shackra
+<!-- ❌ Please do not change the section below ❌ -->
+## Assignees
+/assign me
+
+## Reviewers
+/assign_reviewer @shackra
