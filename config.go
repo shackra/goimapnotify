@@ -146,7 +146,7 @@ func loadConfiguration(path string) (Configuration, error) {
 		topConfiguration.Configurations = legacyConverter(legacy)
 	}
 
-	if len(topConfiguration.Configurations) > 0 && topConfiguration.Configurations[0].Boxes == nil {
+	if len(topConfiguration.Configurations) > 0 && (topConfiguration.Configurations[0].Host == "" && topConfiguration.Configurations[0].HostCMD == "") {
 		return Configuration{}, fmt.Errorf("configuration file '%s' is empty or have invalid configuration format", path)
 	}
 
