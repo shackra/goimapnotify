@@ -114,7 +114,10 @@ func main() {
 			// nolint
 			defer client.Logout()
 
-			max, _ := printDelimiter(client)
+			max, err := printDelimiter(client)
+			if err != nil {
+				logrus.WithError(err).Warning("listing mailboxes finished with error")
+			}
 			_ = walkMailbox(client, "", 0, max)
 		} else {
 			// launch watchers for all mailboxes

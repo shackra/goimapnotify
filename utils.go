@@ -30,10 +30,7 @@ func printDelimiter(c *client.Client) (int, error) {
 	mailboxes := make(chan *imap.MailboxInfo, 10)
 	done := make(chan error, 1)
 	go func() {
-		err := c.List("", "*", mailboxes)
-		if err != nil {
-			logrus.WithError(err).Warning("listing mailboxes finished with error")
-		}
+		done <- c.List("", "*", mailboxes)
 	}()
 
 	i := 0
