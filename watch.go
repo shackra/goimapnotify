@@ -24,6 +24,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type BoxEventData struct {
+	Account        string
+	Mailbox        string
+	CurrentExists  int
+	PreviousExists int
+}
+
 // IDLEEvent models an IDLE event
 type IDLEEvent = Box
 

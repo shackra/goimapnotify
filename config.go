@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"text/template"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -39,6 +41,23 @@ func (e EventType) String() string {
 	default:
 		return "Unknown Event"
 	}
+}
+
+func compileTemplate(i string) error {
+	t, err := template.New("test").Parse(i)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer(nil)
+
+	input := BoxEventData{
+		Account:        "example@example.com",
+		Mailbox:        "Inbox",
+		CurrentExists:  73,
+		PreviousExists: 42,
+	}
+
+	return t.Execute(buf, input)
 }
 
 type Configuration struct {
