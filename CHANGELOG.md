@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="2.3.16"></a>
+## [2.3.16] - 2024-07-29
 ### Changes
 - Change configuration format in readme to YAML
 - Change installation instructions
@@ -33,6 +36,7 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.3.15...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.3.16...HEAD
+[2.3.16]: https://gitlab.com/shackra/goimapnotify/compare/2.3.15...2.3.16
 [2.3.15]: https://gitlab.com/shackra/goimapnotify/compare/2.3.14...2.3.15
 [2.3.14]: https://gitlab.com/shackra/goimapnotify/compare/2.3.13...2.3.14
