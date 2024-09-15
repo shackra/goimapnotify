@@ -40,7 +40,7 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 		c, err = client.DialTLS(conf.Host+fmt.Sprintf(":%d", conf.Port), &tls.Config{
 			ServerName:         conf.Host,
 			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
-			MinVersion:         tls.VersionTLS13,
+			MinVersion:         tls.VersionTLS12,
 		})
 	} else {
 		c, err = client.Dial(conf.Host + fmt.Sprintf(":%d", conf.Port))
