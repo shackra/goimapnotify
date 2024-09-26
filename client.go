@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2022  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2024  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,13 +19,15 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
+	imapid "github.com/emersion/go-imap-id"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-sasl"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -38,34 +40,58 @@ type IMAPIDLEClient struct {
 }
 
 func newClient(conf NotifyConfig) (c *client.Client, err error) {
-	for attempt := 1; attempt < maxAttempts; attempt++ {
-		if conf.TLS {
-			c, err = client.DialTLS(fmt.Sprintf("%s:%d", conf.Host, conf.Port), &tls.Config{
-				ServerName:         conf.Host,
-				InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
-			})
-		} else {
-			c, err = client.Dial(fmt.Sprintf("%s:%d", conf.Host, conf.Port))
-		}
-
-		if err != nil {
-			// wait a bit if something went wrong trying to connect to the IMAP server
-			seconds := time.Duration(attempt) * 10 * time.Second
-			logrus.WithError(err).WithField("host", conf.Host).WithField("port", conf.Port).Errorf("there was an error attempting to connect the email client, retrying in %s (attempt %d)", seconds, attempt)
-			time.Sleep(seconds)
-		} else {
-			// things went okay, stop the loop
-			break
-		}
+	if conf.TLS && !conf.TLSOptions.STARTTLS {
+		c, err = client.DialTLS(conf.Host+fmt.Sprintf(":%d", conf.Port), &tls.Config{
+			ServerName:         conf.Host,
+			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+			MinVersion:         tls.VersionTLS12,
+		})
+	} else {
+		c, err = client.Dial(conf.Host + fmt.Sprintf(":%d", conf.Port))
 	}
 
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("cannot dial to %s:%d, tls: %t, start TLS: %t. error: %w", conf.Host, conf.Port, conf.TLS, conf.TLSOptions.STARTTLS, err)
 	}
 
 	// turn on debugging
 	if conf.Debug {
-		c.SetDebug(os.Stdout)
+		pr, pw := io.Pipe()
+
+		sigChan := make(chan os.Signal, 1)
+
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			<-sigChan
+			pr.Close() // close the pipe when the program is about to close
+		}()
+
+		go censorCredentials(pr, os.Stdout)
+
+		c.SetDebug(pw)
+	}
+
+	if conf.TLS && conf.TLSOptions.STARTTLS {
+		err = c.StartTLS(&tls.Config{
+			ServerName:         conf.Host,
+			InsecureSkipVerify: !conf.TLSOptions.RejectUnauthorized,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if ok, err := c.Support(imapid.Capability); err != nil {
+		return nil, fmt.Errorf("unable to check support for capability %s, error: %w", imapid.Capability, err)
+	} else if ok {
+		idClient := imapid.NewClient(c)
+		if _, err := idClient.ID(imapid.ID{
+			imapid.FieldName:    "goimapnotify",
+			imapid.FieldVersion: gittag,
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	if conf.XOAuth2 {
@@ -92,10 +118,14 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 				Port:  conf.Port,
 			}
 			sasl_client := sasl.NewOAuthBearerClient(sasl_oauth)
-			err = c.Authenticate(sasl_client)
+			if err := c.Authenticate(sasl_client); err != nil {
+				return nil, err
+			}
 		} else if okXOAuth2 {
 			sasl_xoauth2 := NewXoauth2Client(conf.Username, conf.Password)
-			err = c.Authenticate(sasl_xoauth2)
+			if err := c.Authenticate(sasl_xoauth2); err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		err = c.Login(conf.Username, conf.Password)
