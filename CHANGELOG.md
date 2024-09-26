@@ -1,9 +1,36 @@
-<a name="unreleased"></a>
-## [Unreleased]
+<a name="2.4"></a>
+## [2.4] - 2024-09-26
+
+### Changes
+- Change configuration format in readme to YAML
+- Change installation instructions
+- Remove privacy alert in command description
+- Display a message asking for donations :D
+- Update to Go 1.20
+- Remove Terra Luna donation address
+- Advertise donations through some stablecoins
+- Refactor configuration-related code
+
+### Features
+- Support for monitoring all mailboxes
+- Add YAML support
+- Send IMAP ID
+- Add Code of Conduct
+- Keep privacy of users censoring credentials
+
+### Fixes
+- Switch from TLS1.3 to TLS1.2
+- Display donation message on stderr
+- Ensure the List call from `printDelimiter` finishes before returning
+- Resolve ambiguous TLS and config extension
+- Improve conditional check at watch.go
+- Missing commas in the JSON example in README.md
+- Resolve "Improve/re-do changelog"
+- Display all errors when trying to load the configuration
 
 
 <a name="2.3.16"></a>
-## [2.3.16] - 2024-07-29
+## [2.3.16] - 2024-09-01
 ### Changes
 - Change configuration format in readme to YAML
 - Change installation instructions
