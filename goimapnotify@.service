@@ -3,7 +3,7 @@ Description=Execute scripts on IMAP mailbox changes (new/deleted/updated message
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/goimapnotify -conf %h/.config/imapnotify/%i.yaml
+ExecStart=/usr/bin/goimapnotify -conf %h/.config/imapnotify/%i.conf
 Restart=always
 RestartSec=30
 

@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2024  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/emersion/go-imap/client"
@@ -49,17 +48,9 @@ func (w *WatchMailBox) Watch() {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
-	status, err := w.client.Select(w.box.Mailbox, true)
-	if err != nil {
-		if strings.Contains(err.Error(), "reason: Unknown Mailbox") {
-			logrus.Warnf("[%s:%s] Cannot select mailbox: %v, skipped!", w.box.Alias, w.box.Mailbox, err)
-			return
-		}
-		logrus.Fatalf("[%s:%s] Cannot select mailbox: %v", w.box.Alias, w.box.Mailbox, err)
+	if _, err := w.client.Select(w.box.Mailbox, true); err != nil {
+		w.l.WithError(err).Fatal("Cannot select mailbox")
 	}
-	w.box.ExistingEmail = status.Messages
-	logrus.Debugf("[%s:%s] Existing mail: %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail)
-
 	w.client.Updates = updates
 
 	go func() {
@@ -72,27 +63,22 @@ func (w *WatchMailBox) Watch() {
 	for {
 		select {
 		case update := <-updates:
-			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
-				if m.Mailbox.Messages >= w.box.ExistingEmail {
-					// messages arrived
-					w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
-				} else {
-					// messages deleted
-					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
-				}
-				logrus.Debugf("[%s:%s] Existing mail from %d to %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail, m.Mailbox.Messages)
-				w.box.ExistingEmail = m.Mailbox.Messages
+			m, ok := update.(*client.MailboxUpdate)
+			if ok && m.Mailbox.Messages > 0 {
+				// dispatch IDLE event to the main loop
+				w.idleEvent <- w.box
+			}
+			// message deleted
+			_, ok = update.(*client.ExpungeUpdate)
+			if ok {
+				w.idleEvent <- w.box
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
-			logrus.Warnf("[%s:%s] Stopping client watching mailbox",
-				w.box.Alias,
-				w.box.Mailbox)
+			w.l.Warn("Stopping client watching mailbox")
 			return
 		case finished := <-done:
-			logrus.Warnf("[%s:%s] Done watching mailbox",
-				w.box.Alias,
-				w.box.Mailbox)
+			w.l.Warn("Done watching mailbox")
 			if finished != nil {
 				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}
@@ -119,16 +105,4 @@ func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 		defer wg.Done()
 		w.Watch()
 	}()
-}
-
-func makeIDLEEvent(w IDLEEvent, e EventType) IDLEEvent {
-	return IDLEEvent{
-		Alias:             w.Alias,
-		Mailbox:           w.Mailbox,
-		Reason:            e,
-		OnNewMail:         w.OnNewMail,
-		OnNewMailPost:     w.OnNewMailPost,
-		OnDeletedMail:     w.OnDeletedMail,
-		OnDeletedMailPost: w.OnDeletedMailPost,
-	}
 }
