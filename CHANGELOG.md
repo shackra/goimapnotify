@@ -1,7 +1,11 @@
+<a name="unreleased"></a>
+## [Unreleased]
+
+
 <a name="2.4"></a>
 ## [2.4] - 2024-09-26
-
 ### Changes
+- Merge branch `2.3.x` into `master`
 - Change configuration format in readme to YAML
 - Change installation instructions
 - Remove privacy alert in command description
@@ -27,6 +31,9 @@
 - Missing commas in the JSON example in README.md
 - Resolve "Improve/re-do changelog"
 - Display all errors when trying to load the configuration
+
+### Reverts
+- Merge branch '2.3.x' into 'master'
 
 
 <a name="2.3.16"></a>
@@ -63,7 +70,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.3.16...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.4...HEAD
+[2.4]: https://gitlab.com/shackra/goimapnotify/compare/2.3.16...2.4
 [2.3.16]: https://gitlab.com/shackra/goimapnotify/compare/2.3.15...2.3.16
 [2.3.15]: https://gitlab.com/shackra/goimapnotify/compare/2.3.14...2.3.15
 [2.3.14]: https://gitlab.com/shackra/goimapnotify/compare/2.3.13...2.3.14
