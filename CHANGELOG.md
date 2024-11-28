@@ -1,9 +1,13 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Fixes
+- "Limit number of restarts for systemd job"
+- "Update README.md to reflect extension of `-conf` flag"
+
 
 <a name="2.4"></a>
-## [2.4] - 2024-09-26
+## [2.4] - 2024-09-30
 ### Changes
 - Merge branch `2.3.x` into `master`
 - Change configuration format in readme to YAML
