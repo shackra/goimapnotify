@@ -1,5 +1,7 @@
 [Unit]
 Description=Execute scripts on IMAP mailbox changes (new/deleted/updated messages) using IDLE, golang version.
+StartLimitIntervalSec=1d
+StartLimitBurst=5
 
 [Service]
 Type=simple
