@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Changes
+- Don't suppress stderr of executed commands
+
 ### Fixes
 - "Limit number of restarts for systemd job"
 - "Update README.md to reflect extension of `-conf` flag"
