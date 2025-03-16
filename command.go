@@ -44,5 +44,6 @@ func PrepareCommand(command string, rsp IDLEEvent, printCommand bool) *exec.Cmd 
 	// #nosec
 	cmd := exec.Command(commandsplt[0], commandsplt[1:]...)
 	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd
 }
