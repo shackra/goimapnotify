@@ -30,10 +30,6 @@ import (
 	"github.com/emersion/go-sasl"
 )
 
-const (
-	maxAttempts = 5
-)
-
 type IMAPIDLEClient struct {
 	*client.Client
 	*idle.IdleClient
