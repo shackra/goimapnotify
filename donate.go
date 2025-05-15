@@ -27,7 +27,7 @@ func printDonate(out io.Writer, padding int) {
 	white := color.New(color.FgWhite, color.Bold)
 	stars := white.Sprintf("%*s*****************************************************\n", padding, " ")
 
-	out.Write([]byte(stars + msg + stars))
+	_, _ = out.Write([]byte(stars + msg + stars))
 }
 
 func donateMessage(padding int) string {

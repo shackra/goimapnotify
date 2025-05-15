@@ -68,6 +68,12 @@ func (w *WatchMailBox) Watch() {
 		_ = w.client.Logout()
 	}()
 
+	// issue fake event to trigger a first time sync
+	go func() {
+		w.l.Info("Issuing fake IMAP Event for first time sync")
+		w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
+	}()
+
 	// Block and process IDLE events
 	for {
 		select {
@@ -103,7 +109,8 @@ func (w *WatchMailBox) Watch() {
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
 func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup) {
+	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
+) {
 	w := WatchMailBox{
 		client:    c,
 		conf:      f,
