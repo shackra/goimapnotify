@@ -17,6 +17,7 @@ configurations:
         tlsOptions:
             rejectUnauthorized: false
             starttls: true
+        idleLogoutTimeout: 15
         username: USERNAME
         alias: ExampleCOM
         password: PASSWORD
