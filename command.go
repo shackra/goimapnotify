@@ -21,7 +21,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -41,7 +40,8 @@ func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
 	logrus.Debugf("Command: %s", strings.Join(commandsplt, " "))
 	// #nosec
 	cmd := exec.Command(commandsplt[0], commandsplt[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
 	return cmd
 }

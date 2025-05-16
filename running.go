@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -111,19 +112,30 @@ func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug boo
 		return nil
 	}
 	call := PrepareCommand(on, event)
-	err := call.Run()
+	out, err := call.Output()
 	if err != nil {
+		exiterr, ok := err.(*exec.ExitError)
+		if ok {
+			logrus.Errorf("stderror: %q", string(exiterr.Stderr))
+		}
 		return fmt.Errorf("On%sMail command failed: %v", callKind, err)
 	}
+	logrus.Infof("stdout: %q", string(out))
 
 	if onpost == "SKIP" || onpost == "" {
 		return nil
 	}
+
 	call = PrepareCommand(onpost, event)
-	err = call.Run()
+	out, err = call.Output()
 	if err != nil {
+		exiterr, ok := err.(*exec.ExitError)
+		if ok {
+			logrus.Errorf("stderror: %q", string(exiterr.Stderr))
+		}
 		return fmt.Errorf("On%sMailPost command failed: %v", callKind, err)
 	}
+	logrus.Infof("stdout: %q", string(out))
 
 	return nil
 }
