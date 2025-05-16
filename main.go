@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -62,44 +63,56 @@ func main() {
 		"Configuration file",
 	)
 	list := flag.Bool("list", false, "List all mailboxes and exit")
-	debug := flag.Bool("debug", false, "Output all network activity to the terminal")
+	loglevel := flag.String("log-level", "info", "change the logging level, possible values: error, warning/warn, info/information, debug")
 	wait := flag.Int("wait", 1, "Period in seconds between IDLE event and execution of scripts")
 
 	flag.Usage = usage
 
 	flag.Parse()
 
-	logrus.SetLevel(logrus.InfoLevel)
-	if *debug {
+	debug := false
+
+	switch strings.ToLower(*loglevel) {
+	case "debug":
 		logrus.SetLevel(logrus.DebugLevel)
+		debug = true
+	case "info", "information":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "warn", "warning":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	default:
+		logrus.Fatalf("unknown logging level %q", *loglevel)
 	}
+
 	logrus.Infof("ℹ Running commit %s, tag %s, branch %s", commit, gittag, branch)
 
 	viper.SetConfigFile(*fileconf)
 	if err := viper.ReadInConfig(); err != nil {
-		logrus.Fatalf("Can't read file: '%s', error: %v", *fileconf, err)
+		logrus.WithError(err).Fatalf("can't read file: %q", *fileconf)
 	}
 
 	topConfig, err := loadConfiguration(*fileconf)
 	if err != nil {
-		logrus.Fatalf("can't load the configuration: %v", err)
+		logrus.WithError(err).Fatalf("can't load the configuration %q", *fileconf)
 	}
-	logrus.Debugf("configuration loaded successfuly: %s", *fileconf)
+	logrus.Debugf("configuration loaded successfully: %q", *fileconf)
 
 	idleChan := make(chan IDLEEvent)
 	boxChan := make(chan BoxEvent, 1)
 	quit := make(chan os.Signal, 1)
 	doneChan := make(chan struct{})
-	running := NewRunningBox(*debug, *wait)
+	running := NewRunningBox(debug, *wait)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	wg := &sync.WaitGroup{}
 
 	// indexes used because we need to change struct data
 	for i := range topConfig.Configurations {
-		topConfig.Configurations[i].Debug = *debug
+		topConfig.Configurations[i].Debug = debug
 		topConfig.Configurations[i] = retrieveCmd(topConfig.Configurations[i])
 		if topConfig.Configurations[i].Alias == "" {
-			if *debug {
+			if debug {
 				topConfig.Configurations[i].Alias = censorEmailAddress(
 					topConfig.Configurations[i].Username,
 				)
@@ -111,22 +124,21 @@ func main() {
 		if *list {
 			client, cErr := newClient(topConfig.Configurations[i])
 			if cErr != nil {
-				logrus.Fatalf("[%s] Something went wrong creating IMAP client: %v",
-					topConfig.Configurations[i].Alias, cErr)
+				logrus.WithField("alias", topConfig.Configurations[i].Alias).WithError(cErr).Fatalf("Something went wrong creating IMAP client")
 			}
 			// nolint
 			defer client.Logout()
 
 			max, err := printDelimiter(client)
 			if err != nil {
-				logrus.WithError(err).Warning("listing mailboxes finished with error")
+				logrus.WithField("alias", topConfig.Configurations[i].Alias).WithError(err).Warning("listing mailboxes finished with error")
 			}
 			_ = walkMailbox(client, "", 0, max)
 		} else {
 			if len(topConfig.Configurations[i].Boxes) == 0 {
 				client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
 				if iErr != nil {
-					logrus.Fatalf(iErr.Error())
+					logrus.WithError(iErr).Fatal("cannot make IMAP client")
 				}
 				mailboxes := make(chan *imap.MailboxInfo, 10)
 				done := make(chan error, 1)
@@ -144,7 +156,7 @@ func main() {
 				for _, m := range mboxes {
 					client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
 					if iErr != nil {
-						logrus.Fatalf(iErr.Error())
+						logrus.WithError(iErr).Fatal("cannot make IMAP client")
 					}
 					nConf := topConfig.Configurations[i]
 					box := Box{
@@ -171,8 +183,7 @@ func main() {
 					topConfig.Configurations[i].Boxes[j] = setFromConfig(topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j])
 					client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
 					if iErr != nil {
-						logrus.Fatalf("[%s:%s] Something went wrong creating IDLE client: %s",
-							topConfig.Configurations[i].Boxes[j].Alias, topConfig.Configurations[i].Boxes[j].Mailbox, iErr)
+						logrus.WithError(iErr).WithFields(logrus.Fields{"alias": topConfig.Configurations[i].Boxes[j].Alias, "mailbox": topConfig.Configurations[i].Boxes[j].Mailbox}).Fatal("cannot make IMAP client")
 					}
 					box := topConfig.Configurations[i].Boxes[j]
 					key := box.Alias + box.Mailbox
@@ -192,7 +203,7 @@ func main() {
 			l.Info("Restarting watcher for mailbox")
 			client, fErr := newIMAPIDLEClient(boxEvent.Conf)
 			if fErr != nil {
-				l.WithError(fErr).Fatalf("Something went wrong creating IDLE client")
+				l.WithError(fErr).Fatal("Something went wrong creating IDLE client")
 			}
 			NewWatchBox(client, boxEvent.Conf, boxEvent.Mailbox, idleChan, boxChan, doneChan, wg)
 		case <-quit:
@@ -208,8 +219,8 @@ func main() {
 			}()
 		}
 	}
-	logrus.Info("Waiting other goroutines to stop...")
+	logrus.Info("waiting other goroutines to stop...")
 	wg.Wait()
 	printDonate(os.Stderr, 11)
-	logrus.Info("Bye")
+	logrus.Info("bye")
 }

@@ -20,9 +20,8 @@ func censorCredentials(in io.Reader, out io.Writer) {
 		censoredLine := censorEmailAddress(censorPasswordInLogin(line))
 
 		_, err := out.Write([]byte(censoredLine + "\n"))
-
 		if err != nil {
-			logrus.Errorf("unable to write censored lines: %v", err)
+			logrus.WithError(err).Error("unable to write censored line")
 		}
 	}
 }

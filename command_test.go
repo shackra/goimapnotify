@@ -22,8 +22,8 @@ import (
 )
 
 func TestBugArgs(t *testing.T) {
-	var args = []string{"sh", "-c", "emacsclient -e '(something)'"}
-	cmd := PrepareCommand("emacsclient -e '(something)'", IDLEEvent{}, true)
+	args := []string{"sh", "-c", "emacsclient -e '(something)'"}
+	cmd := PrepareCommand("emacsclient -e '(something)'", IDLEEvent{})
 	if !reflect.DeepEqual(cmd.Args, args) {
 		t.Errorf("*cmd.Args are %+v, expected %+v", cmd.Args, args)
 	}

@@ -47,14 +47,14 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 	l := logrus.WithField("alias", rsp.Alias).WithField("mailbox", rsp.Mailbox)
 	if shouldSkip(rsp) {
-		l.Warnf("No command for %s, skipping scheduling...", rsp.Reason)
+		l.Warnf("No command for %q, skipping scheduling...", rsp.Reason)
 		return
 	}
 
 	key := rsp.Alias + rsp.Mailbox
 	wait := time.Duration(r.wait) * time.Second
 	when := time.Now().Add(wait).Format(time.RFC850)
-	format := fmt.Sprintf("[%s:%s] %%s syncing '%s' for %s (%s in the future)", rsp.Alias, rsp.Mailbox, rsp.Reason, when, wait)
+	format := fmt.Sprintf("%%s syncing %q for %s (%s in the future)", rsp.Reason, when, wait)
 
 	r.mutex[key].Lock()
 	_, exists := r.timer[key]
@@ -71,7 +71,7 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 	r.mutex[key].Unlock()
 
 	if main {
-		l.Infof(format, "Scheduled")
+		l.Infof(format, "scheduled")
 		select {
 		case <-r.timer[key].C:
 			r.run(rsp)
@@ -79,7 +79,7 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 			// just get out
 		}
 	} else {
-		l.Infof(format, "Rescheduled")
+		l.Infof(format, "rescheduled")
 	}
 }
 
@@ -97,7 +97,7 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 	}
 
 	if err != nil {
-		logrus.Error(err)
+		logrus.WithError(err).Errorf("an error was encountered while executing commands for %q", rsp.Reason)
 	}
 }
 
@@ -110,19 +110,19 @@ func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug boo
 	if on == "SKIP" || on == "" {
 		return nil
 	}
-	call := PrepareCommand(on, event, debug)
+	call := PrepareCommand(on, event)
 	err := call.Run()
 	if err != nil {
-		return fmt.Errorf("[%s:%s] On%sMail command failed: %v", event.Alias, event.Mailbox, callKind, err)
+		return fmt.Errorf("On%sMail command failed: %v", callKind, err)
 	}
 
 	if onpost == "SKIP" || onpost == "" {
 		return nil
 	}
-	call = PrepareCommand(onpost, event, debug)
+	call = PrepareCommand(onpost, event)
 	err = call.Run()
 	if err != nil {
-		return fmt.Errorf("[%s:%s] On%sMailPost command failed: %v", event.Alias, event.Mailbox, callKind, err)
+		return fmt.Errorf("On%sMailPost command failed: %v", callKind, err)
 	}
 
 	return nil
