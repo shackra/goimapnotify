@@ -25,7 +25,7 @@ import (
 )
 
 // PrepareCommand parse a string and return a command executable by Go
-func PrepareCommand(command string, rsp IDLEEvent, printCommand bool) *exec.Cmd {
+func PrepareCommand(command string, rsp IDLEEvent) *exec.Cmd {
 	var commandstr string
 	if strings.Contains(command, "%s") {
 		commandstr = fmt.Sprintf(command, rsp.Mailbox)
@@ -34,9 +34,7 @@ func PrepareCommand(command string, rsp IDLEEvent, printCommand bool) *exec.Cmd 
 	}
 
 	commandsplt := append([]string{"cmd", "/c"}, commandstr)
-	if printCommand {
-		logrus.Infof("Command: %s", strings.Join(commandsplt, " "))
-	}
+	logrus.Debugf("Command: %s", strings.Join(commandsplt, " "))
 	// #nosec
 	cmd := exec.Command(commandsplt[0], commandsplt[1:]...)
 	cmd.Stdout = os.Stdout

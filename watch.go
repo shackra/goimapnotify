@@ -42,35 +42,36 @@ type WatchMailBox struct {
 	idleEvent chan<- IDLEEvent
 	boxEvent  chan<- BoxEvent
 	done      <-chan struct{}
-	l         *logrus.Entry
 }
 
 func (w *WatchMailBox) Watch() {
 	updates := make(chan client.Update)
 	done := make(chan error, 1)
 
+	l := logrus.WithFields(logrus.Fields{"alias": w.box.Alias, "mailbox": w.box.Mailbox})
+
 	status, err := w.client.Select(w.box.Mailbox, true)
 	if err != nil {
 		if strings.Contains(err.Error(), "reason: Unknown Mailbox") {
-			logrus.Warnf("[%s:%s] Cannot select mailbox: %v, skipped!", w.box.Alias, w.box.Mailbox, err)
+			l.WithError(err).Warn("cannot select mailbox, skipped!")
 			return
 		}
-		logrus.Fatalf("[%s:%s] Cannot select mailbox: %v", w.box.Alias, w.box.Mailbox, err)
+		l.WithError(err).Fatal("cannot select mailbox")
 	}
 	w.box.ExistingEmail = status.Messages
-	logrus.Debugf("[%s:%s] Existing mail: %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail)
+	l.Debugf("existing mail: %d", w.box.ExistingEmail)
 
 	w.client.Updates = updates
 
 	go func() {
-		w.l.Info("Watching mailbox")
+		l.Info("Watching mailbox")
 		done <- w.client.IdleWithFallback(nil, 0) // 0 = good default
 		_ = w.client.Logout()
 	}()
 
 	// issue fake event to trigger a first time sync
 	go func() {
-		w.l.Info("Issuing fake IMAP Event for first time sync")
+		l.Info("issuing fake IMAP Event for first time sync")
 		w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
 	}()
 
@@ -86,19 +87,15 @@ func (w *WatchMailBox) Watch() {
 					// messages deleted
 					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
 				}
-				logrus.Debugf("[%s:%s] Existing mail from %d to %d", w.box.Alias, w.box.Mailbox, w.box.ExistingEmail, m.Mailbox.Messages)
+				l.Debugf("existing mail from %d to %d", w.box.ExistingEmail, m.Mailbox.Messages)
 				w.box.ExistingEmail = m.Mailbox.Messages
 			}
 		case <-w.done:
 			// the main event loop is asking us to stop
-			logrus.Warnf("[%s:%s] Stopping client watching mailbox",
-				w.box.Alias,
-				w.box.Mailbox)
+			l.Warn("stopping client watching mailbox")
 			return
 		case finished := <-done:
-			logrus.Warnf("[%s:%s] Done watching mailbox",
-				w.box.Alias,
-				w.box.Mailbox)
+			l.Warn("done watching mailbox")
 			if finished != nil {
 				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}
@@ -118,7 +115,6 @@ func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 		idleEvent: i,
 		boxEvent:  b,
 		done:      q,
-		l:         logrus.WithField("alias", m.Alias).WithField("mailbox", m.Mailbox),
 	}
 
 	wg.Add(1)

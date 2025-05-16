@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	imap "github.com/emersion/go-imap"
@@ -64,7 +63,7 @@ func walkMailbox(c *client.Client, b string, l, max int) error {
 			if attr == "\\Haschildren" {
 				err := walkMailbox(c, m.Name, l+1, max)
 				if err != nil {
-					logrus.Errorf("cannot keep walking mailboxes: %s\n", err)
+					logrus.WithError(err).Error("cannot keep walking mailboxes\n")
 					return err
 				}
 				break
@@ -97,14 +96,14 @@ func boxchar(p, l, b int) string {
 
 func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 	if conf.PasswordCMD != "" {
-		cmd := PrepareCommand(conf.PasswordCMD, IDLEEvent{}, conf.Debug)
+		cmd := PrepareCommand(conf.PasswordCMD, IDLEEvent{})
 		// Avoid leaking the password
 		cmd.Stdout = nil
 		buf, err := cmd.Output()
 		if err == nil {
 			conf.Password = strings.Trim(string(buf[:]), "\n")
 		} else {
-			log.Fatalf("Can't retrieve password from command: %s", err)
+			logrus.WithError(err).Fatal("cannot retrieve password from command")
 		}
 	}
 	return conf
@@ -112,14 +111,14 @@ func retrievePasswordCmd(conf NotifyConfig) NotifyConfig {
 
 func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
 	if conf.UsernameCMD != "" {
-		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{}, conf.Debug)
+		cmd := PrepareCommand(conf.UsernameCMD, IDLEEvent{})
 		// Avoid leaking the username
 		cmd.Stdout = nil
 		buf, err := cmd.Output()
 		if err == nil {
 			conf.Username = strings.Trim(string(buf[:]), "\n")
 		} else {
-			log.Fatalf("Can't retrieve username from command: %s", err)
+			logrus.WithError(err).Fatal("cannot retrieve username from command")
 		}
 	}
 	return conf
@@ -127,14 +126,14 @@ func retrieveUsernameCmd(conf NotifyConfig) NotifyConfig {
 
 func retrieveHostCmd(conf NotifyConfig) NotifyConfig {
 	if conf.HostCMD != "" {
-		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{}, conf.Debug)
+		cmd := PrepareCommand(conf.HostCMD, IDLEEvent{})
 		// Avoid leaking the hostname
 		cmd.Stdout = nil
 		buf, err := cmd.Output()
 		if err == nil {
 			conf.Host = strings.Trim(string(buf[:]), "\n")
 		} else {
-			log.Fatalf("Can't retrieve host from command: %s", err)
+			logrus.WithError(err).Fatal("cannot retrieve host from command")
 		}
 	}
 	return conf
