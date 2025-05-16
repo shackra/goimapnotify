@@ -1,10 +1,19 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="2.4.1"></a>
+## [2.4.1] - 2025-05-15
 ### Changes
 - Don't suppress stderr of executed commands
 
+### Features
+- "Support for configuring restart time interval"
+
 ### Fixes
+- "Log command output with logger facility"
+- "Add configuration option for setting log level"
+- Ensure first time sync is run
 - "Limit number of restarts for systemd job"
 - "Update README.md to reflect extension of `-conf` flag"
 
@@ -77,7 +86,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.4...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.4.1...HEAD
+[2.4.1]: https://gitlab.com/shackra/goimapnotify/compare/2.4...2.4.1
 [2.4]: https://gitlab.com/shackra/goimapnotify/compare/2.3.16...2.4
 [2.3.16]: https://gitlab.com/shackra/goimapnotify/compare/2.3.15...2.3.16
 [2.3.15]: https://gitlab.com/shackra/goimapnotify/compare/2.3.14...2.3.15
