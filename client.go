@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	imapid "github.com/emersion/go-imap-id"
 	idle "github.com/emersion/go-imap-idle"
@@ -136,5 +137,14 @@ func newIMAPIDLEClient(conf NotifyConfig) (c *IMAPIDLEClient, err error) {
 	if err != nil {
 		return c, err
 	}
-	return &IMAPIDLEClient{i, idle.NewClient(i)}, nil
+
+	idleC := idle.NewClient(i)
+
+	amount := 25 // default per https://github.com/emersion/go-imap-idle/blob/db256843144576c70e551f0732f1d1d3b5bec67e/client.go#L11
+	if conf.IDLELogoutTimeout > 0 {
+		amount = conf.IDLELogoutTimeout
+	}
+	idleC.LogoutTimeout = time.Duration(amount) * time.Minute
+
+	return &IMAPIDLEClient{i, idleC}, nil
 }
