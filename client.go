@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-sasl"
+	"github.com/sirupsen/logrus"
 )
 
 type IMAPIDLEClient struct {
@@ -83,11 +85,15 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 		return nil, fmt.Errorf("unable to check support for capability %s, error: %w", imapid.Capability, err)
 	} else if ok {
 		idClient := imapid.NewClient(c)
-		if _, err := idClient.ID(imapid.ID{
+		_, err := idClient.ID(imapid.ID{
 			imapid.FieldName:    "goimapnotify",
 			imapid.FieldVersion: gittag,
-		}); err != nil {
-			return nil, err
+		})
+		if err != nil {
+			if !strings.Contains(err.Error(), "Parameter list contains a non-string: expected a string") {
+				return nil, err
+			}
+			logrus.WithError(err).Debug("IMAP server supports ID command but gave malformed response, ignoring...")
 		}
 	}
 
