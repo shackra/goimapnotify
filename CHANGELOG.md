@@ -2,6 +2,12 @@
 ## [Unreleased]
 
 
+<a name="2.5"></a>
+## [2.5] - 2025-05-17
+### Features
+- Add configuration option that enables usage of IMAP ID command
+
+
 <a name="2.4.2"></a>
 ## [2.4.2] - 2025-05-17
 ### Features
@@ -95,7 +101,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.4.2...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5...HEAD
+[2.5]: https://gitlab.com/shackra/goimapnotify/compare/2.4.2...2.5
 [2.4.2]: https://gitlab.com/shackra/goimapnotify/compare/2.4.1...2.4.2
 [2.4.1]: https://gitlab.com/shackra/goimapnotify/compare/2.4...2.4.1
 [2.4]: https://gitlab.com/shackra/goimapnotify/compare/2.3.16...2.4
