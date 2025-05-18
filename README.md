@@ -67,6 +67,7 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 - `wait`: is the delay in seconds before the mail syncing is trigger (see shackra/goimapnotify#10).
 - `boxes`: List of mailboxes. If none is defined, all will be monitored.
 - `idleLogoutTimeout`: Change the time between restarts of the IDLE command (see shackra/goimapnotify#49)
+- `enableIDCommand`: Tell goimapotify that your server needs (and supports!) the ID command (see shackra/goimapnotify#58 shackra/goimapnotify#57; the servers in those tickets did not support ID and they responded with a non-standard error message, causing goimapnotify to fail)
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 To enable TLS connection, set `tls` as `true` and `starttls` as `false`

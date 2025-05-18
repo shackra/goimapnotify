@@ -72,6 +72,7 @@ type ConfigurationLegacy struct {
 	TLS               bool             `yaml:"tls" json:"tls"`
 	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions" json:"tlsOptions"`
 	IDLELogoutTimeout int              `yaml:"idleLogoutTimeout" json:"idleLogoutTimeout"`
+	EnableIDCommand   bool             `yaml:"enableIDCommand" json:"enableIDCommand"`
 	Username          string           `yaml:"username" json:"username"`
 	UsernameCMD       string           `yaml:"usernameCMD" json:"usernameCMD"`
 	Password          string           `yaml:"password" json:"password"`
@@ -93,6 +94,7 @@ type NotifyConfig struct {
 	TLS               bool             `yaml:"tls" json:"tls"`
 	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions" json:"tlsOptions"`
 	IDLELogoutTimeout int              `yaml:"idleLogoutTimeout" json:"idleLogoutTimeout"`
+	EnableIDCommand   bool             `yaml:"enableIDCommand" json:"enableIDCommand"`
 	Username          string           `yaml:"username" json:"username"`
 	UsernameCMD       string           `yaml:"usernameCMD" json:"usernameCMD"`
 	Alias             string           `yaml:"alias" json:"alias"`
@@ -146,6 +148,7 @@ func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
 	c.OnDeletedMail = conf.OnDeletedMail
 	c.OnDeletedMailPost = conf.OnDeletedMailPost
 	c.IDLELogoutTimeout = conf.IDLELogoutTimeout
+	c.EnableIDCommand = conf.EnableIDCommand
 	for _, mailbox := range conf.Boxes {
 		c.Boxes = append(c.Boxes, Box{Mailbox: mailbox})
 	}
