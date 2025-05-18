@@ -1,6 +1,12 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Features
+- Add template support for commands in configuration options
+
+### Fixes
+- Parameter list contains a non-string
+
 
 <a name="2.4.1"></a>
 ## [2.4.1] - 2025-05-15

@@ -66,6 +66,7 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 - `xoAuth2`: is an option that allow us to login on your IMAP using OAuth2, **be aware**: the token is retrieve from `passwordCMD` (see shackra/goimapnotify#9).
 - `wait`: is the delay in seconds before the mail syncing is trigger (see shackra/goimapnotify#10).
 - `boxes`: List of mailboxes. If none is defined, all will be monitored.
+- `idleLogoutTimeout`: Change the time between restarts of the IDLE command (see shackra/goimapnotify#49)
 
 The application will use TLS as long as the IMAP server advertises this capability. If you use self-signed certificates or something, be sure to set `rejectUnauthorized` as `false`.
 To enable TLS connection, set `tls` as `true` and `starttls` as `false`
