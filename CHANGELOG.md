@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="2.4.2"></a>
+## [2.4.2] - 2025-05-17
 ### Features
 - Add template support for commands in configuration options
 
@@ -92,7 +95,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.4.1...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.4.2...HEAD
+[2.4.2]: https://gitlab.com/shackra/goimapnotify/compare/2.4.1...2.4.2
 [2.4.1]: https://gitlab.com/shackra/goimapnotify/compare/2.4...2.4.1
 [2.4]: https://gitlab.com/shackra/goimapnotify/compare/2.3.16...2.4
 [2.3.16]: https://gitlab.com/shackra/goimapnotify/compare/2.3.15...2.3.16
