@@ -1,6 +1,6 @@
 module gitlab.com/shackra/goimapnotify
 
-go 1.21
+go 1.23
 
 require (
 	github.com/emersion/go-imap v1.2.1
@@ -9,6 +9,7 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43
 	github.com/fatih/color v1.16.0
 	github.com/sirupsen/logrus v1.8.1
+	github.com/spf13/viper v1.19.0
 )
 
 require (
@@ -25,8 +26,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.19.0 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect

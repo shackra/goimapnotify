@@ -83,14 +83,14 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 
 	if ok, err := c.Support(imapid.Capability); err != nil {
 		return nil, fmt.Errorf("unable to check support for capability %s, error: %w", imapid.Capability, err)
-	} else if ok {
+	} else if ok && conf.EnableIDCommand {
 		idClient := imapid.NewClient(c)
 		_, err := idClient.ID(imapid.ID{
 			imapid.FieldName:    "goimapnotify",
 			imapid.FieldVersion: gittag,
 		})
 		if err != nil {
-			if !strings.Contains(err.Error(), "Parameter list contains a non-string: expected a string") {
+			if !strings.Contains(err.Error(), "Parameter list contains a non-string: expected a string") && !strings.Contains(err.Error(), "Unrecognised command") {
 				return nil, err
 			}
 			logrus.WithError(err).Debug("IMAP server supports ID command but gave malformed response, ignoring...")
