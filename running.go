@@ -17,9 +17,11 @@ package main
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -47,7 +49,7 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 
 func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 	l := logrus.WithField("alias", rsp.Alias).WithField("mailbox", rsp.Mailbox)
-	if shouldSkip(rsp) {
+	if shouldSkip(rsp.box) {
 		l.Warnf("No command for %q, skipping scheduling...", rsp.Reason)
 		return
 	}
@@ -92,26 +94,37 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 
 	var err error
 	if rsp.Reason == NEWMAIL {
-		err = prepareAndRun(rsp.OnNewMail, rsp.OnNewMailPost, rsp.Reason, rsp, r.debug)
+		err = prepareAndRun(rsp.box.OnNewMail, rsp.box.OnNewMailPost, rsp, r.debug)
 	} else if rsp.Reason == DELETEDMAIL {
-		err = prepareAndRun(rsp.OnDeletedMail, rsp.OnDeletedMailPost, rsp.Reason, rsp, r.debug)
+		err = prepareAndRun(rsp.box.OnDeletedMail, rsp.box.OnDeletedMailPost, rsp, r.debug)
 	}
 
 	if err != nil {
-		logrus.WithError(err).Errorf("an error was encountered while executing commands for %q", rsp.Reason)
+		logrus.WithError(err).WithFields(logrus.Fields{"alias": rsp.Alias, "mailbox": rsp.Mailbox}).Errorf("an error was encountered while executing commands for %q", rsp.Reason)
 	}
 }
 
-func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug bool) error {
+func prepareAndRun(on, onpost string, event IDLEEvent, debug bool) error {
 	callKind := "New"
-	if kind == DELETEDMAIL {
+	if event.Reason == DELETEDMAIL {
 		callKind = "Deleted"
 	}
 
 	if on == "SKIP" || on == "" {
 		return nil
 	}
-	call := PrepareCommand(on, event)
+
+	bufOn := bytes.NewBuffer(nil)
+	tOn, err := template.New("run").Parse(on)
+	if err != nil {
+		return fmt.Errorf("cannot compile template for 'on' command, error: %w", err)
+	}
+	err = tOn.Execute(bufOn, event)
+	if err != nil {
+		return fmt.Errorf("there was an error while executing the template, error: %w", err)
+	}
+
+	call := PrepareCommand(bufOn.String(), event)
 	out, err := call.Output()
 	if err != nil {
 		exiterr, ok := err.(*exec.ExitError)
@@ -126,7 +139,17 @@ func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug boo
 		return nil
 	}
 
-	call = PrepareCommand(onpost, event)
+	bufOnPost := bytes.NewBuffer(nil)
+	tOnPost, err := template.New("run").Parse(onpost)
+	if err != nil {
+		return fmt.Errorf("cannot compile template for 'onPost' command, error: %w", err)
+	}
+	err = tOnPost.Execute(bufOnPost, event)
+	if err != nil {
+		return fmt.Errorf("there was an error while executing the template, error: %w", err)
+	}
+
+	call = PrepareCommand(bufOnPost.String(), event)
 	out, err = call.Output()
 	if err != nil {
 		exiterr, ok := err.(*exec.ExitError)
@@ -140,12 +163,12 @@ func prepareAndRun(on, onpost string, kind EventType, event IDLEEvent, debug boo
 	return nil
 }
 
-func shouldSkip(event IDLEEvent) bool {
-	switch event.Reason {
+func shouldSkip(b Box) bool {
+	switch b.Reason {
 	case NEWMAIL:
-		return event.OnNewMail == "" || event.OnNewMail == "SKIP"
+		return b.OnNewMail == "" || b.OnNewMail == "SKIP"
 	case DELETEDMAIL:
-		return event.OnDeletedMail == "" || event.OnDeletedMail == "SKIP"
+		return b.OnDeletedMail == "" || b.OnDeletedMail == "SKIP"
 	}
 
 	return false

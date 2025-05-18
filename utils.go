@@ -156,16 +156,32 @@ func setFromConfig(conf NotifyConfig, box Box) Box {
 	if box.OnNewMail == "" {
 		box.OnNewMail = conf.OnNewMail
 	}
+	err := compileTemplate(box.OnNewMail)
+	if err != nil {
+		logrus.WithError(err).Fatal("template is invalid for 'OnNewMail'")
+	}
 	if box.OnNewMailPost == "" {
 		box.OnNewMailPost = conf.OnNewMailPost
+	}
+	err = compileTemplate(box.OnNewMailPost)
+	if err != nil {
+		logrus.WithError(err).Fatal("template is invalid for 'OnNewMailPost'")
 	}
 
 	// for deleted email
 	if box.OnDeletedMail == "" {
 		box.OnDeletedMail = conf.OnDeletedMail
 	}
+	err = compileTemplate(box.OnDeletedMail)
+	if err != nil {
+		logrus.WithError(err).Fatal("template is invalid for 'OnDeletedMail'")
+	}
 	if box.OnDeletedMailPost == "" {
 		box.OnDeletedMailPost = conf.OnDeletedMailPost
+	}
+	err = compileTemplate(box.OnDeletedMailPost)
+	if err != nil {
+		logrus.WithError(err).Fatal("template is invalid for 'OnDeletedMailPost'")
 	}
 
 	box.Alias = conf.Alias

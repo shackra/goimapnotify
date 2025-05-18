@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"text/template"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -39,6 +41,23 @@ func (e EventType) String() string {
 	default:
 		return "Unknown Event"
 	}
+}
+
+// compileTemplate tests that the string template is valid, if any was
+// provided.
+func compileTemplate(i string) error {
+	t, err := template.New("test").Parse(i)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer(nil)
+
+	input := IDLEEvent{
+		Alias:   "example@example.com",
+		Mailbox: "Inbox",
+	}
+
+	return t.Execute(buf, input)
 }
 
 type Configuration struct {
