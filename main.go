@@ -160,13 +160,34 @@ func main() {
 					}
 					nConf := topConfig.Configurations[i]
 					box := Box{
-						Alias:             nConf.Alias,
-						Mailbox:           m,
-						OnNewMail:         nConf.OnNewMail,
-						OnNewMailPost:     nConf.OnNewMailPost,
-						OnDeletedMail:     nConf.OnDeletedMail,
-						OnDeletedMailPost: nConf.OnDeletedMailPost,
+						Alias:   nConf.Alias,
+						Mailbox: m,
 					}
+
+					err := compileTemplate(nConf.OnNewMail)
+					if err != nil {
+						logrus.WithError(err).Fatal("template is invalid for 'OnNewMail'")
+					}
+					box.OnNewMail = nConf.OnNewMail
+
+					err = compileTemplate(nConf.OnNewMailPost)
+					if err != nil {
+						logrus.WithError(err).Fatal("template is invalid for 'OnNewMailPost'")
+					}
+					box.OnNewMailPost = nConf.OnNewMailPost
+
+					err = compileTemplate(nConf.OnDeletedMail)
+					if err != nil {
+						logrus.WithError(err).Fatal("template is invalid for 'OnDeletedMail'")
+					}
+					box.OnDeletedMail = nConf.OnDeletedMail
+
+					err = compileTemplate(nConf.OnDeletedMailPost)
+					if err != nil {
+						logrus.WithError(err).Fatal("template is invalid for 'OnDeletedMailPost'")
+					}
+					box.OnDeletedMailPost = nConf.OnDeletedMailPost
+
 					key := box.Alias + box.Mailbox
 					running.mutex[key] = new(sync.RWMutex)
 					NewWatchBox(client, NotifyConfig{}, box, idleChan, boxChan, doneChan, wg)

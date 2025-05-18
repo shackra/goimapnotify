@@ -25,7 +25,14 @@ import (
 )
 
 // IDLEEvent models an IDLE event
-type IDLEEvent = Box
+type IDLEEvent struct {
+	Alias         string
+	Mailbox       string
+	Reason        EventType
+	ExistingEmail int
+	NewEmail      int
+	box           Box
+}
 
 // BoxEvent helps in communication between the box watch launcher and the box
 // watching goroutines
@@ -72,7 +79,14 @@ func (w *WatchMailBox) Watch() {
 	// issue fake event to trigger a first time sync
 	go func() {
 		l.Info("issuing fake IMAP Event for first time sync")
-		w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
+		w.idleEvent <- IDLEEvent{
+			Alias:         w.box.Alias,
+			Mailbox:       w.box.Mailbox,
+			Reason:        NEWMAIL,
+			ExistingEmail: 0,
+			NewEmail:      0,
+			box:           w.box,
+		}
 	}()
 
 	// Block and process IDLE events
@@ -82,10 +96,24 @@ func (w *WatchMailBox) Watch() {
 			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
 				if m.Mailbox.Messages >= w.box.ExistingEmail {
 					// messages arrived
-					w.idleEvent <- makeIDLEEvent(w.box, NEWMAIL)
+					w.idleEvent <- IDLEEvent{
+						Alias:         w.box.Alias,
+						Mailbox:       w.box.Mailbox,
+						Reason:        NEWMAIL,
+						ExistingEmail: int(w.box.ExistingEmail),
+						NewEmail:      int(m.Mailbox.Messages),
+						box:           w.box,
+					}
 				} else {
 					// messages deleted
-					w.idleEvent <- makeIDLEEvent(w.box, DELETEDMAIL)
+					w.idleEvent <- IDLEEvent{
+						Alias:         w.box.Alias,
+						Mailbox:       w.box.Mailbox,
+						Reason:        DELETEDMAIL,
+						ExistingEmail: int(w.box.ExistingEmail),
+						NewEmail:      int(m.Mailbox.Messages),
+						box:           w.box,
+					}
 				}
 				l.Debugf("existing mail from %d to %d", w.box.ExistingEmail, m.Mailbox.Messages)
 				w.box.ExistingEmail = m.Mailbox.Messages
@@ -122,16 +150,4 @@ func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
 		defer wg.Done()
 		w.Watch()
 	}()
-}
-
-func makeIDLEEvent(w IDLEEvent, e EventType) IDLEEvent {
-	return IDLEEvent{
-		Alias:             w.Alias,
-		Mailbox:           w.Mailbox,
-		Reason:            e,
-		OnNewMail:         w.OnNewMail,
-		OnNewMailPost:     w.OnNewMailPost,
-		OnDeletedMail:     w.OnDeletedMail,
-		OnDeletedMailPost: w.OnDeletedMailPost,
-	}
 }
