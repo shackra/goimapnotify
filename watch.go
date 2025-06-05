@@ -37,18 +37,17 @@ type IDLEEvent struct {
 // BoxEvent helps in communication between the box watch launcher and the box
 // watching goroutines
 type BoxEvent struct {
-	Conf    NotifyConfig
+	uniqID  string
 	Mailbox Box
 }
 
 // WatchMailBox Keeps track of the IDLE state of one Mailbox
 type WatchMailBox struct {
 	client    *IMAPIDLEClient
-	conf      NotifyConfig
 	box       Box
 	idleEvent chan<- IDLEEvent
 	boxEvent  chan<- BoxEvent
-	done      <-chan struct{}
+	quit      <-chan struct{}
 }
 
 func (w *WatchMailBox) Watch() {
@@ -72,8 +71,7 @@ func (w *WatchMailBox) Watch() {
 
 	go func() {
 		l.Info("Watching mailbox")
-		done <- w.client.IdleWithFallback(nil, 0) // 0 = good default
-		_ = w.client.Logout()
+		done <- w.client.IdleWithFallback(w.quit, 0) // 0 = good default
 	}()
 
 	// issue fake event to trigger a first time sync
@@ -89,8 +87,11 @@ func (w *WatchMailBox) Watch() {
 		}
 	}()
 
+	kickedOut := w.client.LoggedOut()
+
 	// Block and process IDLE events
-	for {
+	run := true
+	for run {
 		select {
 		case update := <-updates:
 			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
@@ -118,31 +119,41 @@ func (w *WatchMailBox) Watch() {
 				l.Debugf("existing mail from %d to %d", w.box.ExistingEmail, m.Mailbox.Messages)
 				w.box.ExistingEmail = m.Mailbox.Messages
 			}
-		case <-w.done:
+		case <-w.quit:
 			// the main event loop is asking us to stop
 			l.Warn("stopping client watching mailbox")
-			return
+			run = false
 		case finished := <-done:
 			l.Warn("done watching mailbox")
 			if finished != nil {
-				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
+				l.WithError(finished).Info("watching stopped because of an error")
+				w.boxEvent <- BoxEvent{uniqID: w.box.Alias + w.box.Mailbox, Mailbox: w.box}
 			}
-			return
+			run = false
+		case <-kickedOut:
+			l.Info("connection to the server closed")
+			run = false
+			w.boxEvent <- BoxEvent{uniqID: w.box.Alias + w.box.Mailbox, Mailbox: w.box}
 		}
 	}
 }
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it
-func NewWatchBox(c *IMAPIDLEClient, f NotifyConfig, m Box, i chan<- IDLEEvent,
-	b chan<- BoxEvent, q <-chan struct{}, wg *sync.WaitGroup,
+func NewWatchBox(
+	c *IMAPIDLEClient,
+	f NotifyConfig,
+	m Box,
+	i chan<- IDLEEvent,
+	b chan<- BoxEvent,
+	q <-chan struct{},
+	wg *sync.WaitGroup,
 ) {
 	w := WatchMailBox{
 		client:    c,
-		conf:      f,
 		box:       m,
 		idleEvent: i,
 		boxEvent:  b,
-		done:      q,
+		quit:      q,
 	}
 
 	wg.Add(1)
