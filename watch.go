@@ -90,8 +90,7 @@ func (w *WatchMailBox) Watch() {
 	}()
 
 	// Block and process IDLE events
-	run := true
-	for run {
+	for {
 		select {
 		case update := <-updates:
 			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
@@ -122,18 +121,15 @@ func (w *WatchMailBox) Watch() {
 		case <-w.done:
 			// the main event loop is asking us to stop
 			l.Warn("stopping client watching mailbox")
-			run = false
+			return
 		case finished := <-done:
 			l.Warn("done watching mailbox")
 			if finished != nil {
 				w.boxEvent <- BoxEvent{Conf: w.conf, Mailbox: w.box}
 			}
-			run = false
+			return
 		}
 	}
-
-	err = w.client.Logout()
-	logrus.WithError(err).Error("something went wrong when trying to log-out")
 }
 
 // NewWatchBox creates a new instance of WatchMailBox and launch it

@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"slices"
 	"text/template"
 
-	"github.com/emersion/go-imap"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -84,6 +82,7 @@ type ConfigurationLegacy struct {
 	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
 	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
+	Debug             bool             `yaml:"-" json:"-"`
 	Boxes             []string         `yaml:"boxes" json:"boxes"`
 }
 
@@ -106,6 +105,7 @@ type NotifyConfig struct {
 	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
 	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
+	Debug             bool             `yaml:"-" json:"-"`
 	Boxes             []Box            `yaml:"boxes" json:"boxes"`
 }
 
@@ -155,16 +155,16 @@ func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
 	return append(r, c)
 }
 
-func loadConfiguration(path string) (*Configuration, error) {
+func loadConfiguration(path string) (Configuration, error) {
 	var topConfiguration Configuration
 	if err := viper.Unmarshal(&topConfiguration); err != nil {
-		return nil, fmt.Errorf("Can't parse the configuration: %q, error: %v", path, err)
+		return Configuration{}, fmt.Errorf("Can't parse the configuration: %s, error: %v", path, err)
 	}
 
 	if topConfiguration.Configurations == nil {
 		var legacy ConfigurationLegacy
 		if err := viper.UnmarshalExact(&legacy); err != nil {
-			return nil, fmt.Errorf("Can't parse the configuration in 'legacy' format: %s, error: %v", path, err)
+			return Configuration{}, fmt.Errorf("Can't parse the configuration in 'legacy' format: %s, error: %v", path, err)
 		}
 
 		logrus.Info("legacy format configuration detected")
@@ -172,53 +172,8 @@ func loadConfiguration(path string) (*Configuration, error) {
 	}
 
 	if len(topConfiguration.Configurations) > 0 && (topConfiguration.Configurations[0].Host == "" && topConfiguration.Configurations[0].HostCMD == "") {
-		return nil, fmt.Errorf("configuration file %q is empty or have invalid configuration format", path)
+		return Configuration{}, fmt.Errorf("configuration file '%s' is empty or have invalid configuration format", path)
 	}
 
-	for account := range topConfiguration.Configurations {
-		topConfiguration.Configurations[account] = retrieveCmd(topConfiguration.Configurations[account])
-		if topConfiguration.Configurations[account].Alias == "" {
-			topConfiguration.Configurations[account].Alias = topConfiguration.Configurations[account].Username
-		}
-
-		conf := topConfiguration.Configurations[account]
-
-		// If there is no mailboxes, watch over all mailboxes of the account
-		if len(conf.Boxes) == 0 {
-			client, err := newIMAPIDLEClient(conf)
-			if err != nil {
-				return nil, fmt.Errorf("account %q, failed to create IMAP client, error: %w", conf.Username, err)
-			}
-			// nolint
-			defer client.Logout()
-
-			// NOTE(shackra): Having to do this is really disgusting, v2 offers a better way for listing mailboxes. I should consider updating.
-			ch := make(chan *imap.MailboxInfo)
-			go func() {
-				err := client.List("", "*", ch)
-				if err != nil {
-					logrus.WithError(err).WithField("account", conf.Username).Fatal("failed to list all mailboxes")
-				}
-			}()
-
-			for mailbox := range ch {
-				// Ignore mailboxes with attributes `\All` and `\Noselect`
-				if slices.Contains(mailbox.Attributes, "\\All") || slices.Contains(mailbox.Attributes, "\\Noselect") {
-					continue
-				}
-
-				box := setFromConfig(conf, Box{
-					Mailbox: mailbox.Name,
-				})
-				topConfiguration.Configurations[account].Boxes = append(topConfiguration.Configurations[account].Boxes, box)
-			}
-		} else {
-			// replace all listed mailboxes with the same mailboxes carrying values from the configuration
-			for mailbox := range topConfiguration.Configurations[account].Boxes {
-				topConfiguration.Configurations[account].Boxes[mailbox] = setFromConfig(conf, topConfiguration.Configurations[account].Boxes[mailbox])
-			}
-		}
-	}
-
-	return &topConfiguration, nil
+	return topConfiguration, nil
 }
