@@ -180,6 +180,9 @@ func loadConfiguration(path string) (*Configuration, error) {
 		if topConfiguration.Configurations[account].Alias == "" {
 			topConfiguration.Configurations[account].Alias = topConfiguration.Configurations[account].Username
 		}
+		if logrus.GetLevel() == logrus.DebugLevel {
+			topConfiguration.Configurations[account].Alias = "<?>"
+		}
 
 		conf := topConfiguration.Configurations[account]
 
