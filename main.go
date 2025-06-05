@@ -22,12 +22,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 	"syscall"
-
-	"github.com/emersion/go-imap"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -93,131 +90,67 @@ func main() {
 		logrus.WithError(err).Fatalf("can't read file: %q", *fileconf)
 	}
 
+	idleChan := make(chan IDLEEvent)
+	boxChan := make(chan BoxEvent, 1)
+	quit := make(chan os.Signal, 1)
+	doneChan := make(chan struct{})
+
 	topConfig, err := loadConfiguration(*fileconf)
 	if err != nil {
 		logrus.WithError(err).Fatalf("can't load the configuration %q", *fileconf)
 	}
 	logrus.Debugf("configuration loaded successfully: %q", *fileconf)
 
-	idleChan := make(chan IDLEEvent)
-	boxChan := make(chan BoxEvent, 1)
-	quit := make(chan os.Signal, 1)
-	doneChan := make(chan struct{})
 	running := NewRunningBox(debug, *wait)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	wg := &sync.WaitGroup{}
 
-	// indexes used because we need to change struct data
-	for i := range topConfig.Configurations {
-		topConfig.Configurations[i].Debug = debug
-		topConfig.Configurations[i] = retrieveCmd(topConfig.Configurations[i])
-		if topConfig.Configurations[i].Alias == "" {
-			if debug {
-				topConfig.Configurations[i].Alias = censorEmailAddress(
-					topConfig.Configurations[i].Username,
-				)
-			} else {
-				topConfig.Configurations[i].Alias = topConfig.Configurations[i].Username
-			}
-		}
-
-		if *list {
-			client, cErr := newClient(topConfig.Configurations[i])
-			if cErr != nil {
-				logrus.WithField("alias", topConfig.Configurations[i].Alias).WithError(cErr).Fatalf("Something went wrong creating IMAP client")
+	if *list {
+		for _, account := range topConfig.Configurations {
+			client, err := newClient(account)
+			if err != nil {
+				logrus.WithError(err).WithField("account", account.Alias).Fatal("something went wrong creating IMAP client")
 			}
 			// nolint
 			defer client.Logout()
 
 			max, err := printDelimiter(client)
 			if err != nil {
-				logrus.WithField("alias", topConfig.Configurations[i].Alias).WithError(err).Warning("listing mailboxes finished with error")
+				logrus.WithField("alias", account.Alias).WithError(err).Warning("listing mailboxes finished with error")
 			}
-			_ = walkMailbox(client, "", 0, max)
-		} else {
-			if len(topConfig.Configurations[i].Boxes) == 0 {
-				client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
-				if iErr != nil {
-					logrus.WithError(iErr).Fatal("cannot make IMAP client")
-				}
-				mailboxes := make(chan *imap.MailboxInfo, 10)
-				done := make(chan error, 1)
-				go func() {
-					done <- client.List("", "*", mailboxes)
-				}()
-				var mboxes []string
-
-				for m := range mailboxes {
-					if slices.Contains([]string{"[Gmail]", "[Gmail]/All Mail"}, m.Name) {
-						continue
-					}
-					mboxes = append(mboxes, m.Name)
-				}
-				for _, m := range mboxes {
-					client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
-					if iErr != nil {
-						logrus.WithError(iErr).Fatal("cannot make IMAP client")
-					}
-					nConf := topConfig.Configurations[i]
-					box := Box{
-						Alias:   nConf.Alias,
-						Mailbox: m,
-					}
-
-					err := compileTemplate(nConf.OnNewMail)
-					if err != nil {
-						logrus.WithError(err).Fatal("template is invalid for 'OnNewMail'")
-					}
-					box.OnNewMail = nConf.OnNewMail
-
-					err = compileTemplate(nConf.OnNewMailPost)
-					if err != nil {
-						logrus.WithError(err).Fatal("template is invalid for 'OnNewMailPost'")
-					}
-					box.OnNewMailPost = nConf.OnNewMailPost
-
-					err = compileTemplate(nConf.OnDeletedMail)
-					if err != nil {
-						logrus.WithError(err).Fatal("template is invalid for 'OnDeletedMail'")
-					}
-					box.OnDeletedMail = nConf.OnDeletedMail
-
-					err = compileTemplate(nConf.OnDeletedMailPost)
-					if err != nil {
-						logrus.WithError(err).Fatal("template is invalid for 'OnDeletedMailPost'")
-					}
-					box.OnDeletedMailPost = nConf.OnDeletedMailPost
-
-					key := box.Alias + box.Mailbox
-					running.mutex[key] = new(sync.RWMutex)
-					NewWatchBox(client, NotifyConfig{}, box, idleChan, boxChan, doneChan, wg)
-				}
-			} else {
-				// launch watchers for all mailboxes
-				// listen in "boxes"
-
-				for j := range topConfig.Configurations[i].Boxes {
-					/*
-					 * Copy default names if empty. Use SKIP to skip execution
-					 * The check is happening in running.go:run
-					 */
-					topConfig.Configurations[i].Boxes[j] = setFromConfig(topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j])
-					client, iErr := newIMAPIDLEClient(topConfig.Configurations[i])
-					if iErr != nil {
-						logrus.WithError(iErr).WithFields(logrus.Fields{"alias": topConfig.Configurations[i].Boxes[j].Alias, "mailbox": topConfig.Configurations[i].Boxes[j].Mailbox}).Fatal("cannot make IMAP client")
-					}
-					box := topConfig.Configurations[i].Boxes[j]
-					key := box.Alias + box.Mailbox
-					running.mutex[key] = new(sync.RWMutex)
-					NewWatchBox(client, topConfig.Configurations[i], topConfig.Configurations[i].Boxes[j],
-						idleChan, boxChan, doneChan, wg)
-				}
+			logrus.WithField("account", account.Alias).Info("walking through the account mailboxes")
+			err = walkMailbox(client, "", 0, max)
+			if err != nil {
+				logrus.WithField("account", account.Alias).WithError(err).Fatal("something went wrong while walking on the account listing all mailboxes")
 			}
 		}
 	}
 
-	run := !*list
-	for run {
+	// Watch mailboxes events
+	// This kick-starts the watching
+	idleForever := !*list
+	if idleForever {
+		/* I really doubt it that creating a new client for
+		   each mailbox that we want to listen for events is
+		   healthy, or elegant... but, if the connection
+		   fails, what the program does right now is exactly
+		   that: it creates a new client for that failing
+		   mailbox only, lol!
+		*/
+		for _, account := range topConfig.Configurations {
+			for _, mailbox := range account.Boxes {
+				client, err := newIMAPIDLEClient(account)
+				if err != nil {
+					logrus.WithError(err).WithField("account", account.Alias).Fatal("cannot make IMAP client")
+				}
+				key := account.Alias + mailbox.Mailbox
+				running.mutex[key] = new(sync.RWMutex)
+				NewWatchBox(client, account, mailbox, idleChan, boxChan, doneChan, wg)
+			}
+		}
+	}
+
+	for idleForever {
 		select {
 		case boxEvent := <-boxChan:
 			l := logrus.WithField("alias", boxEvent.Mailbox.Alias).WithField("mailbox", boxEvent.Mailbox.Mailbox)
@@ -231,7 +164,7 @@ func main() {
 			// OS asked nicely to close, we ask our
 			// goroutines to do the same
 			close(doneChan)
-			run = false
+			idleForever = false
 		case idleEvent := <-idleChan:
 			wg.Add(1)
 			go func() {
