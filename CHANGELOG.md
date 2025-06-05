@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Code Refactoring
+- Simplify program initialization and access to account configuration
+
 
 <a name="2.5"></a>
 ## [2.5] - 2025-05-17
