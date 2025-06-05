@@ -54,7 +54,7 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	}
 
 	// turn on debugging
-	if conf.Debug {
+	if logrus.GetLevel() == logrus.DebugLevel {
 		pr, pw := io.Pipe()
 
 		sigChan := make(chan os.Signal, 1)

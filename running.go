@@ -34,16 +34,18 @@ type RunningBox struct {
 	 * Use map to create a different timer for each
 	 * username-mailbox combination
 	 */
-	timer map[string]*time.Timer
-	mutex map[string]*sync.RWMutex
+	timer  map[string]*time.Timer
+	mutex  map[string]*sync.RWMutex
+	config map[string]NotifyConfig
 }
 
 func NewRunningBox(debug bool, wait int) *RunningBox {
 	return &RunningBox{
-		debug: debug,
-		wait:  wait,
-		timer: make(map[string]*time.Timer),
-		mutex: make(map[string]*sync.RWMutex),
+		debug:  debug,
+		wait:   wait,
+		timer:  make(map[string]*time.Timer),
+		mutex:  make(map[string]*sync.RWMutex),
+		config: make(map[string]NotifyConfig),
 	}
 }
 
