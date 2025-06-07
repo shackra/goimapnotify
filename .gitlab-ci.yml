@@ -12,3 +12,34 @@ testing:
     - go vet ./...
     - go build -v
     - go test -coverprofile goimapnotify
+
+merge_guard:
+  stage: test
+  image: alpine:latest
+  script:
+    - apk add --no-cache curl jq
+    - |
+      MR_API_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}"
+      MR_INFO=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$MR_API_URL")
+      
+      TITLE=$(echo "$MR_INFO" | jq -r .title)
+      CREATED_AT=$(echo "$MR_INFO" | jq -r .created_at)
+      
+      VALID_PREFIXES="^(fix:|new:|chg:|perf:|refactor:|BREAKING CHANGE|draft:)"
+      if ! echo "$TITLE" | grep -Eq "$VALID_PREFIXES"; then
+        echo "❌ MR title is missing a valid prefix."
+        exit 1
+      fi
+      
+      CREATED_TIMESTAMP=$(date -d "$CREATED_AT" +%s)
+      NOW_TIMESTAMP=$(date +%s)
+      AGE_HOURS=$(( (NOW_TIMESTAMP - CREATED_TIMESTAMP) / 3600 ))
+      
+      if [ "$AGE_HOURS" -lt 12 ]; then
+        echo "❌ MR has to be at least 12 hours old"
+        exit 1
+      fi
+      
+      echo "✅ MR fulfills all the requirements."
+  only:
+    - merge_requests
