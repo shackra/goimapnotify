@@ -17,7 +17,7 @@ merge_guard:
   stage: test
   image: alpine:latest
   script:
-    - apk add --no-cache curl jq
+    - apk add --no-cache curl jq bc
     - |
       MR_API_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}"
       MR_INFO=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$MR_API_URL")
@@ -30,13 +30,15 @@ merge_guard:
         echo "❌ MR title is missing a valid prefix."
         exit 1
       fi
-      
-      CREATED_TIMESTAMP=$(date -d "$CREATED_AT" +%s)
+
+      CLEAN_DATE=$(echo "$CREATED_AT" | sed -E 's/T/ /; s/\.[0-9]+Z$//')
+      CREATED_TIMESTAMP=$(date -d "$CLEAN_DATE" +%s)
       NOW_TIMESTAMP=$(date +%s)
-      AGE_HOURS=$(( (NOW_TIMESTAMP - CREATED_TIMESTAMP) / 3600 ))
+      AGE_SECONDS=$((NOW_TIMESTAMP - CREATED_TIMESTAMP))
+      AGE_HOURS=$(echo "scale=2; $AGE_SECONDS / 3600" | bc)
       
-      if [ "$AGE_HOURS" -lt 12 ]; then
-        echo "❌ MR has to be at least 12 hours old"
+      if echo "$AGE_HOURS < 8" | bc -l | grep -q 1; then
+        echo "❌ MR has to be at least 8 hours old, and this one is $AGE_HOURS hour(s)... come back later :)"
         exit 1
       fi
       
