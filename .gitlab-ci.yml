@@ -25,7 +25,7 @@ merge_guard:
       TITLE=$(echo "$MR_INFO" | jq -r .title)
       CREATED_AT=$(echo "$MR_INFO" | jq -r .created_at)
       
-      VALID_PREFIXES="^(fix:|new:|chg:|perf:|refactor:|BREAKING CHANGE|draft:)"
+      VALID_PREFIXES="^(fix:|new:|chg:|perf:|refactor:|BREAKING CHANGE|[Dd]raft:)"
       if ! echo "$TITLE" | grep -Eq "$VALID_PREFIXES"; then
         echo "❌ MR title is missing a valid prefix."
         exit 1
