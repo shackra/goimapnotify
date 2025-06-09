@@ -1,8 +1,14 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="2.5.1"></a>
+## [2.5.1] - 2025-06-09
 ### Code Refactoring
 - Simplify program initialization and access to account configuration
+
+### Reverts
+- Merge branch 'uniformity' into 'master'
 
 
 <a name="2.5"></a>
@@ -104,7 +110,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5.1...HEAD
+[2.5.1]: https://gitlab.com/shackra/goimapnotify/compare/2.5...2.5.1
 [2.5]: https://gitlab.com/shackra/goimapnotify/compare/2.4.2...2.5
 [2.4.2]: https://gitlab.com/shackra/goimapnotify/compare/2.4.1...2.4.2
 [2.4.1]: https://gitlab.com/shackra/goimapnotify/compare/2.4...2.4.1
