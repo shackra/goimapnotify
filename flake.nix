@@ -32,7 +32,6 @@
           system:
           f {
             pkgs = import nixpkgs { inherit system; };
-            inherit system;
           }
         );
     in
@@ -41,9 +40,9 @@
       schemas = flake-schemas.schemas;
 
       checks = forEachSupportedSystem (
-        { system, ... }:
+        { pkgs }:
         {
-          pre-commit-check = pre-commit-hooks.lib.${system}.run {
+          pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
             src = ./.;
             hooks = {
               nil.enable = true;
@@ -58,9 +57,36 @@
         }
       );
 
+      packages = forEachSupportedSystem (
+        { pkgs }:
+        {
+          default = pkgs.buildGoModule {
+            pname = "goimapnotify";
+            version = "2.5";
+
+            src = builtins.path {
+              path = ./.;
+              name = "source";
+            };
+
+            modSha256 = "sha256-5cZzaCoOR1R7iST0q3GaJbYIbKKEigeWqhp87maOL04=";
+            vendorHash = "sha256-5cZzaCoOR1R7iST0q3GaJbYIbKKEigeWqhp87maOL04=";
+
+            meta = with pkgs.lib; {
+              description = "Execute scripts on IMAP mailbox changes (new/deleted/updated messages) using IDLE, golang version";
+              license = licenses.gpl3;
+              homepage = "https://gitlab.com/shackra/goimapnotify";
+              changelog = "https://gitlab.com/shackra/goimapnotify/-/blob/master/CHANGELOG.md?ref_type=heads";
+              mainProgram = "goimapnotify";
+              maintainers = with maintainers; [ shackra ];
+              platforms = platforms.all;
+            };
+          };
+        }
+      );
       # Development environments
       devShells = forEachSupportedSystem (
-        { pkgs, system }:
+        { pkgs }:
         {
           default = pkgs.mkShell {
             # Environment variables
@@ -85,7 +111,7 @@
 
               git-chglog
             ];
-            inherit (self.checks.${system}.pre-commit-check) shellHook;
+            inherit (self.checks.${pkgs.system}.pre-commit-check) shellHook;
           };
         }
       );
