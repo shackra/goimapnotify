@@ -138,6 +138,7 @@ func main() {
 		   mailbox only, lol!
 		*/
 		for _, account := range topConfig.Configurations {
+			running.mutex[account.Alias] = new(sync.RWMutex)
 			for _, mailbox := range account.Boxes {
 				client, err := newIMAPIDLEClient(account)
 				if err != nil {

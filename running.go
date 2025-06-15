@@ -94,12 +94,14 @@ func (r *RunningBox) run(rsp IDLEEvent) {
 		l.Infoln("Running synchronization...")
 	}
 
+	r.mutex[rsp.Alias].Lock()
 	var err error
 	if rsp.Reason == NEWMAIL {
 		err = prepareAndRun(rsp.box.OnNewMail, rsp.box.OnNewMailPost, rsp, r.debug)
 	} else if rsp.Reason == DELETEDMAIL {
 		err = prepareAndRun(rsp.box.OnDeletedMail, rsp.box.OnDeletedMailPost, rsp, r.debug)
 	}
+	r.mutex[rsp.Alias].Unlock()
 
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{"alias": rsp.Alias, "mailbox": rsp.Mailbox}).Errorf("an error was encountered while executing commands for %q", rsp.Reason)
