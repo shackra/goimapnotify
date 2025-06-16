@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Fixes
+- Add mutexes for each account and only allow one mailbox sync at a time
+
 
 <a name="2.5.1"></a>
 ## [2.5.1] - 2025-06-09
