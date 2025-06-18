@@ -107,6 +107,7 @@
               gomodifytags
               delve
               gdlv
+              panicparse
 
               nodePackages_latest.bash-language-server
 
