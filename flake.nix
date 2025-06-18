@@ -62,7 +62,7 @@
         {
           default = pkgs.buildGoModule {
             pname = "goimapnotify";
-            version = "2.5";
+            version = "2.5.1";
 
             src = builtins.path {
               path = ./.;
