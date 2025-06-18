@@ -93,6 +93,7 @@
             env = {
               CGO_CFLAGS = "-O2 -g -Wno-error";
               GOTOOLCHAIN = "local";
+              GOTRACEBACK = "all";
             };
             # Pinned packages available in the environment
             packages = with pkgs; [
