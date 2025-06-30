@@ -101,6 +101,7 @@
 
               go
               gopls
+              gotools
               golines
               golangci-lint
               golangci-lint-langserver
