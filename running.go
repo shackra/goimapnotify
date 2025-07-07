@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2023	Jorge Javier Araya Navarro
+// Copyright (C) 2017-2025	Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,8 +34,7 @@ type RunningBox struct {
 	 * Use map to create a different timer for each
 	 * username-mailbox combination
 	 */
-	timer  map[string]*time.Timer
-	mutex  map[string]*sync.RWMutex
+	timer  sync.Map
 	config map[string]NotifyConfig
 }
 
@@ -43,13 +42,12 @@ func NewRunningBox(debug bool, wait int) *RunningBox {
 	return &RunningBox{
 		debug:  debug,
 		wait:   wait,
-		timer:  make(map[string]*time.Timer),
-		mutex:  make(map[string]*sync.RWMutex),
+		timer:  sync.Map{},
 		config: make(map[string]NotifyConfig),
 	}
 }
 
-func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
+func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}, queue chan IDLEEvent) {
 	l := logrus.WithField("alias", rsp.Alias).WithField("mailbox", rsp.Mailbox)
 	if shouldSkip(rsp.box) {
 		l.Warnf("No command for %q, skipping scheduling...", rsp.Reason)
@@ -61,25 +59,27 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 	when := time.Now().Add(wait).Format(time.RFC850)
 	format := fmt.Sprintf("%%s syncing %q for %s (%s in the future)", rsp.Reason, when, wait)
 
-	r.mutex[key].Lock()
-	_, exists := r.timer[key]
+	value, exists := r.timer.LoadOrStore(key, time.NewTimer(wait))
+	wristwatch, ok := value.(*time.Timer)
+	if !ok {
+		l.Fatal("stored value isn't *time.Timer")
+	}
+
 	main := true // main is true for the goroutine that will run sync
 	if exists {
 		// Stop should be called before Reset according to go docs
-		if r.timer[key].Stop() {
+		if wristwatch.Stop() {
 			main = false // stopped running timer -> main is another goroutine
 		}
-		r.timer[key].Reset(wait)
-	} else {
-		r.timer[key] = time.NewTimer(wait)
+		wristwatch.Reset(wait)
+		r.timer.Store(key, wristwatch)
 	}
-	r.mutex[key].Unlock()
 
 	if main {
 		l.Infof(format, "scheduled")
 		select {
-		case <-r.timer[key].C:
-			r.run(rsp)
+		case <-wristwatch.C:
+			queue <- rsp
 		case <-done:
 			// just get out
 		}
@@ -88,27 +88,31 @@ func (r *RunningBox) schedule(rsp IDLEEvent, done <-chan struct{}) {
 	}
 }
 
-func (r *RunningBox) run(rsp IDLEEvent) {
+func (r *RunningBox) run(rsp IDLEEvent) error {
 	l := logrus.WithField("alias", rsp.Alias).WithField("mailbox", rsp.Mailbox)
 	if r.debug {
 		l.Infoln("Running synchronization...")
 	}
 
-	r.mutex[rsp.Alias].Lock()
-	var err error
-	if rsp.Reason == NEWMAIL {
-		err = prepareAndRun(rsp.box.OnNewMail, rsp.box.OnNewMailPost, rsp, r.debug)
-	} else if rsp.Reason == DELETEDMAIL {
-		err = prepareAndRun(rsp.box.OnDeletedMail, rsp.box.OnDeletedMailPost, rsp, r.debug)
+	switch rsp.Reason {
+	case NEWMAIL:
+		err := prepareAndRun(rsp.box.OnNewMail, rsp.box.OnNewMailPost, rsp)
+		if err != nil {
+			return err
+		}
+	case DELETEDMAIL:
+		err := prepareAndRun(rsp.box.OnDeletedMail, rsp.box.OnDeletedMailPost, rsp)
+		if err != nil {
+			return err
+		}
+	default:
+		l.WithField("reason", rsp.Reason).Error("unknown reason value, ignoring...")
 	}
-	r.mutex[rsp.Alias].Unlock()
 
-	if err != nil {
-		logrus.WithError(err).WithFields(logrus.Fields{"alias": rsp.Alias, "mailbox": rsp.Mailbox}).Errorf("an error was encountered while executing commands for %q", rsp.Reason)
-	}
+	return nil
 }
 
-func prepareAndRun(on, onpost string, event IDLEEvent, debug bool) error {
+func prepareAndRun(on, onpost string, event IDLEEvent) error {
 	callKind := "New"
 	if event.Reason == DELETEDMAIL {
 		callKind = "Deleted"

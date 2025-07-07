@@ -12,7 +12,7 @@ import (
 )
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2024	Jorge Javier Araya Navarro
+// Copyright (C) 2017-2025	Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,50 +68,50 @@ type Configuration struct {
 
 // ConfigurationLegacy holds the old configuration format
 type ConfigurationLegacy struct {
-	Host              string           `yaml:"host" json:"host"`
-	HostCMD           string           `yaml:"hostCMD" json:"hostCMD"`
-	Port              int              `yaml:"port" json:"port"`
-	TLS               bool             `yaml:"tls" json:"tls"`
-	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions" json:"tlsOptions"`
+	Host              string           `yaml:"host"              json:"host"`
+	HostCMD           string           `yaml:"hostCMD"           json:"hostCMD"`
+	Port              int              `yaml:"port"              json:"port"`
+	TLS               bool             `yaml:"tls"               json:"tls"`
+	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions"        json:"tlsOptions"`
 	IDLELogoutTimeout int              `yaml:"idleLogoutTimeout" json:"idleLogoutTimeout"`
-	EnableIDCommand   bool             `yaml:"enableIDCommand" json:"enableIDCommand"`
-	Username          string           `yaml:"username" json:"username"`
-	UsernameCMD       string           `yaml:"usernameCMD" json:"usernameCMD"`
-	Password          string           `yaml:"password" json:"password"`
-	PasswordCMD       string           `yaml:"passwordCMD" json:"passwordCMD"`
-	XOAuth2           bool             `yaml:"xoAuth2" json:"xoAuth2"`
-	OnNewMail         string           `yaml:"onNewMail" json:"onNewMail"`
-	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
-	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
+	EnableIDCommand   bool             `yaml:"enableIDCommand"   json:"enableIDCommand"`
+	Username          string           `yaml:"username"          json:"username"`
+	UsernameCMD       string           `yaml:"usernameCMD"       json:"usernameCMD"`
+	Password          string           `yaml:"password"          json:"password"`
+	PasswordCMD       string           `yaml:"passwordCMD"       json:"passwordCMD"`
+	XOAuth2           bool             `yaml:"xoAuth2"           json:"xoAuth2"`
+	OnNewMail         string           `yaml:"onNewMail"         json:"onNewMail"`
+	OnNewMailPost     string           `yaml:"onNewMailPost"     json:"onNewMailPost"`
+	OnDeletedMail     string           `yaml:"onDeletedMail"     json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
-	Boxes             []string         `yaml:"boxes" json:"boxes"`
+	Boxes             []string         `yaml:"boxes"             json:"boxes"`
 }
 
 // NotifyConfig holds the configuration
 type NotifyConfig struct {
-	Host              string           `yaml:"host" json:"host"`
-	HostCMD           string           `yaml:"hostCMD" json:"hostCMD"`
-	Port              int              `yaml:"port" json:"port"`
-	TLS               bool             `yaml:"tls" json:"tls"`
-	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions" json:"tlsOptions"`
+	Host              string           `yaml:"host"              json:"host"`
+	HostCMD           string           `yaml:"hostCMD"           json:"hostCMD"`
+	Port              int              `yaml:"port"              json:"port"`
+	TLS               bool             `yaml:"tls"               json:"tls"`
+	TLSOptions        TLSOptionsStruct `yaml:"tlsOptions"        json:"tlsOptions"`
 	IDLELogoutTimeout int              `yaml:"idleLogoutTimeout" json:"idleLogoutTimeout"`
-	EnableIDCommand   bool             `yaml:"enableIDCommand" json:"enableIDCommand"`
-	Username          string           `yaml:"username" json:"username"`
-	UsernameCMD       string           `yaml:"usernameCMD" json:"usernameCMD"`
-	Alias             string           `yaml:"alias" json:"alias"`
-	Password          string           `yaml:"password" json:"password"`
-	PasswordCMD       string           `yaml:"passwordCMD" json:"passwordCMD"`
-	XOAuth2           bool             `yaml:"xoAuth2" json:"xoAuth2"`
-	OnNewMail         string           `yaml:"onNewMail" json:"onNewMail"`
-	OnNewMailPost     string           `yaml:"onNewMailPost" json:"onNewMailPost"`
-	OnDeletedMail     string           `yaml:"onDeletedMail" json:"onDeletedMail"`
+	EnableIDCommand   bool             `yaml:"enableIDCommand"   json:"enableIDCommand"`
+	Username          string           `yaml:"username"          json:"username"`
+	UsernameCMD       string           `yaml:"usernameCMD"       json:"usernameCMD"`
+	Alias             string           `yaml:"alias"             json:"alias"`
+	Password          string           `yaml:"password"          json:"password"`
+	PasswordCMD       string           `yaml:"passwordCMD"       json:"passwordCMD"`
+	XOAuth2           bool             `yaml:"xoAuth2"           json:"xoAuth2"`
+	OnNewMail         string           `yaml:"onNewMail"         json:"onNewMail"`
+	OnNewMailPost     string           `yaml:"onNewMailPost"     json:"onNewMailPost"`
+	OnDeletedMail     string           `yaml:"onDeletedMail"     json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
-	Boxes             []Box            `yaml:"boxes" json:"boxes"`
+	Boxes             []Box            `yaml:"boxes"             json:"boxes"`
 }
 
 type TLSOptionsStruct struct {
 	RejectUnauthorized bool `yaml:"rejectUnauthorized" json:"rejectUnauthorized"`
-	STARTTLS           bool `yaml:"starttls" json:"starttls"`
+	STARTTLS           bool `yaml:"starttls"           json:"starttls"`
 }
 
 /*
@@ -120,14 +120,14 @@ IDLEEvent handler routine, in order to schedule commands and
 print informative messages
 */
 type Box struct {
-	Alias             string    `json:"-" yaml:"-"`
-	Mailbox           string    `yaml:"mailbox" json:"mailbox"`
-	Reason            EventType `json:"-" yaml:"-"`
-	OnNewMail         string    `yaml:"onNewMail" json:"onNewMail"`
-	OnNewMailPost     string    `yaml:"onNewMailPost" json:"onNewMailPost"`
-	OnDeletedMail     string    `yaml:"onDeletedMail" json:"onDeletedMail"`
-	OnDeletedMailPost string    `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
-	ExistingEmail     uint32    `json:"-" yaml:"-"`
+	Alias             string    `json:"-"                 yaml:"-"`
+	Mailbox           string    `json:"mailbox"           yaml:"mailbox"`
+	Reason            EventType `json:"-"                 yaml:"-"`
+	OnNewMail         string    `json:"onNewMail"         yaml:"onNewMail"`
+	OnNewMailPost     string    `json:"onNewMailPost"     yaml:"onNewMailPost"`
+	OnDeletedMail     string    `json:"onDeletedMail"     yaml:"onDeletedMail"`
+	OnDeletedMailPost string    `json:"onDeletedMailPost" yaml:"onDeletedMailPost"`
+	ExistingEmail     uint32    `json:"-"                 yaml:"-"`
 }
 
 func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
@@ -158,25 +158,35 @@ func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
 func loadConfiguration(path string) (*Configuration, error) {
 	var topConfiguration Configuration
 	if err := viper.Unmarshal(&topConfiguration); err != nil {
-		return nil, fmt.Errorf("Can't parse the configuration: %q, error: %v", path, err)
+		return nil, fmt.Errorf("can't parse the configuration: %q, error: %v", path, err)
 	}
 
 	if topConfiguration.Configurations == nil {
 		var legacy ConfigurationLegacy
 		if err := viper.UnmarshalExact(&legacy); err != nil {
-			return nil, fmt.Errorf("Can't parse the configuration in 'legacy' format: %s, error: %v", path, err)
+			return nil, fmt.Errorf(
+				"can't parse the configuration in 'legacy' format: %s, error: %v",
+				path,
+				err,
+			)
 		}
 
 		logrus.Info("legacy format configuration detected")
 		topConfiguration.Configurations = legacyConverter(legacy)
 	}
 
-	if len(topConfiguration.Configurations) > 0 && (topConfiguration.Configurations[0].Host == "" && topConfiguration.Configurations[0].HostCMD == "") {
-		return nil, fmt.Errorf("configuration file %q is empty or have invalid configuration format", path)
+	if len(topConfiguration.Configurations) > 0 &&
+		(topConfiguration.Configurations[0].Host == "" && topConfiguration.Configurations[0].HostCMD == "") {
+		return nil, fmt.Errorf(
+			"configuration file %q is empty or have invalid configuration format",
+			path,
+		)
 	}
 
 	for account := range topConfiguration.Configurations {
-		topConfiguration.Configurations[account] = retrieveCmd(topConfiguration.Configurations[account])
+		topConfiguration.Configurations[account] = retrieveCmd(
+			topConfiguration.Configurations[account],
+		)
 		if topConfiguration.Configurations[account].Alias == "" {
 			topConfiguration.Configurations[account].Alias = topConfiguration.Configurations[account].Username
 		}
@@ -190,7 +200,11 @@ func loadConfiguration(path string) (*Configuration, error) {
 		if len(conf.Boxes) == 0 {
 			client, err := newIMAPIDLEClient(conf)
 			if err != nil {
-				return nil, fmt.Errorf("account %q, failed to create IMAP client, error: %w", conf.Username, err)
+				return nil, fmt.Errorf(
+					"account %q, failed to create IMAP client, error: %w",
+					conf.Username,
+					err,
+				)
 			}
 			// nolint
 			defer client.Logout()
@@ -200,20 +214,26 @@ func loadConfiguration(path string) (*Configuration, error) {
 			go func() {
 				err := client.List("", "*", ch)
 				if err != nil {
-					logrus.WithError(err).WithField("account", conf.Username).Fatal("failed to list all mailboxes")
+					logrus.WithError(err).
+						WithField("account", conf.Username).
+						Fatal("failed to list all mailboxes")
 				}
 			}()
 
 			for mailbox := range ch {
 				// Ignore mailboxes with attributes `\All` and `\Noselect`
-				if slices.Contains(mailbox.Attributes, "\\All") || slices.Contains(mailbox.Attributes, "\\Noselect") {
+				if slices.Contains(mailbox.Attributes, "\\All") ||
+					slices.Contains(mailbox.Attributes, "\\Noselect") {
 					continue
 				}
 
 				box := setFromConfig(conf, Box{
 					Mailbox: mailbox.Name,
 				})
-				topConfiguration.Configurations[account].Boxes = append(topConfiguration.Configurations[account].Boxes, box)
+				topConfiguration.Configurations[account].Boxes = append(
+					topConfiguration.Configurations[account].Boxes,
+					box,
+				)
 			}
 		} else {
 			// replace all listed mailboxes with the same mailboxes carrying values from the configuration

@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2021  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2025  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@ import (
 )
 
 var (
-	CannotCheckSupportedAuthErr = errors.New("there was an error while checking supported authentication mechanism")
-	TokenAuthNotSupportedErr    = errors.New("XOAUTH2 and OAUTHBEARER are not supported by the server")
+	ErrCannotCheckSupportedAuth = errors.New(
+		"there was an error while checking supported authentication mechanism",
+	)
+	ErrTokenAuthNotSupported = errors.New(
+		"XOAUTH2 and OAUTHBEARER are not supported by the server",
+	)
 )

@@ -43,13 +43,17 @@
         { pkgs }:
         {
           pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
-            src = ./.;
+            src = builtins.path {
+              path = ./.;
+              name = "source";
+            };
             hooks = {
               nil.enable = true;
 
               shellcheck.enable = true;
 
               golangci-lint.enable = true;
+              golines.enable = true;
               gotest.enable = true;
               gofmt.enable = true; # TODO: switch to `gofumpt`
             };
