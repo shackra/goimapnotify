@@ -1,7 +1,11 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="2.5.2"></a>
+## [2.5.2] - 2025-07-07
 ### Fixes
+- Simplify concurrency to avoid `fatal error: concurrent map read and map write`
 - Add mutexes for each account and only allow one mailbox sync at a time
 
 
@@ -113,7 +117,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5.1...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5.2...HEAD
+[2.5.2]: https://gitlab.com/shackra/goimapnotify/compare/2.5.1...2.5.2
 [2.5.1]: https://gitlab.com/shackra/goimapnotify/compare/2.5...2.5.1
 [2.5]: https://gitlab.com/shackra/goimapnotify/compare/2.4.2...2.5
 [2.4.2]: https://gitlab.com/shackra/goimapnotify/compare/2.4.1...2.4.2
