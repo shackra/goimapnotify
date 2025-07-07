@@ -1,7 +1,7 @@
 package main
 
 // This file is part of goimapnotify
-// Copyright (C) 2017-2024  Jorge Javier Araya Navarro
+// Copyright (C) 2017-2025  Jorge Javier Araya Navarro
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,7 +50,14 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("cannot dial to %s:%d, tls: %t, start TLS: %t. error: %w", conf.Host, conf.Port, conf.TLS, conf.TLSOptions.STARTTLS, err)
+		return c, fmt.Errorf(
+			"cannot dial to %s:%d, tls: %t, start TLS: %t. error: %w",
+			conf.Host,
+			conf.Port,
+			conf.TLS,
+			conf.TLSOptions.STARTTLS,
+			err,
+		)
 	}
 
 	// turn on debugging
@@ -63,7 +70,7 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 
 		go func() {
 			<-sigChan
-			pr.Close() // close the pipe when the program is about to close
+			_ = pr.Close() // close the pipe when the program is about to close
 		}()
 
 		go censorCredentials(pr, os.Stdout)
@@ -82,7 +89,11 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	}
 
 	if ok, err := c.Support(imapid.Capability); err != nil {
-		return nil, fmt.Errorf("unable to check support for capability %s, error: %w", imapid.Capability, err)
+		return nil, fmt.Errorf(
+			"unable to check support for capability %s, error: %w",
+			imapid.Capability,
+			err,
+		)
 	} else if ok && conf.EnableIDCommand {
 		idClient := imapid.NewClient(c)
 		_, err := idClient.ID(imapid.ID{
@@ -100,15 +111,15 @@ func newClient(conf NotifyConfig) (c *client.Client, err error) {
 	if conf.XOAuth2 {
 		okBearer, err := c.SupportAuth(sasl.OAuthBearer)
 		if err != nil {
-			return nil, CannotCheckSupportedAuthErr
+			return nil, ErrCannotCheckSupportedAuth
 		}
 		okXOAuth2, err := c.SupportAuth(Xoauth2)
 		if err != nil {
-			return nil, CannotCheckSupportedAuthErr
+			return nil, ErrCannotCheckSupportedAuth
 		}
 
 		if !okXOAuth2 && !okBearer {
-			return nil, TokenAuthNotSupportedErr
+			return nil, ErrTokenAuthNotSupported
 		}
 
 		if okBearer {
