@@ -2,6 +2,12 @@
 ## [Unreleased]
 
 
+<a name="2.5.3"></a>
+## [2.5.3] - 2025-07-10
+### Fixes
+- Better detect email arrival/deletion events
+
+
 <a name="2.5.2"></a>
 ## [2.5.2] - 2025-07-07
 ### Fixes
@@ -117,7 +123,8 @@
 - Resolve "Improve/re-do changelog"
 
 
-[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5.2...HEAD
+[Unreleased]: https://gitlab.com/shackra/goimapnotify/compare/2.5.3...HEAD
+[2.5.3]: https://gitlab.com/shackra/goimapnotify/compare/2.5.2...2.5.3
 [2.5.2]: https://gitlab.com/shackra/goimapnotify/compare/2.5.1...2.5.2
 [2.5.1]: https://gitlab.com/shackra/goimapnotify/compare/2.5...2.5.1
 [2.5]: https://gitlab.com/shackra/goimapnotify/compare/2.4.2...2.5
