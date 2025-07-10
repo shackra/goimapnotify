@@ -30,7 +30,6 @@ type IDLEEvent struct {
 	Mailbox       string
 	Reason        EventType
 	ExistingEmail int
-	NewEmail      int
 	box           Box
 }
 
@@ -82,7 +81,6 @@ func (w *WatchMailBox) Watch() {
 			Mailbox:       w.box.Mailbox,
 			Reason:        NEWMAIL,
 			ExistingEmail: 0,
-			NewEmail:      0,
 			box:           w.box,
 		}
 	}()
@@ -94,30 +92,27 @@ func (w *WatchMailBox) Watch() {
 	for run {
 		select {
 		case update := <-updates:
-			if m, ok := update.(*client.MailboxUpdate); ok && m.Mailbox != nil {
-				if m.Mailbox.Messages >= w.box.ExistingEmail {
-					// messages arrived
-					w.idleEvent <- IDLEEvent{
-						Alias:         w.box.Alias,
-						Mailbox:       w.box.Mailbox,
-						Reason:        NEWMAIL,
-						ExistingEmail: int(w.box.ExistingEmail),
-						NewEmail:      int(m.Mailbox.Messages),
-						box:           w.box,
-					}
-				} else {
-					// messages deleted
-					w.idleEvent <- IDLEEvent{
-						Alias:         w.box.Alias,
-						Mailbox:       w.box.Mailbox,
-						Reason:        DELETEDMAIL,
-						ExistingEmail: int(w.box.ExistingEmail),
-						NewEmail:      int(m.Mailbox.Messages),
-						box:           w.box,
-					}
+			mu, ok := update.(*client.MailboxUpdate)
+			if ok {
+				// messages arrived
+				w.idleEvent <- IDLEEvent{
+					Alias:         w.box.Alias,
+					Mailbox:       w.box.Mailbox,
+					Reason:        NEWMAIL,
+					ExistingEmail: int(mu.Mailbox.Messages),
+					box:           w.box,
 				}
-				l.Debugf("existing mail from %d to %d", w.box.ExistingEmail, m.Mailbox.Messages)
-				w.box.ExistingEmail = m.Mailbox.Messages
+			}
+
+			_, ok = update.(*client.ExpungeUpdate)
+			if ok {
+				// messages deleted
+				w.idleEvent <- IDLEEvent{
+					Alias:   w.box.Alias,
+					Mailbox: w.box.Mailbox,
+					Reason:  DELETEDMAIL,
+					box:     w.box,
+				}
 			}
 		case <-w.quit:
 			// the main event loop is asking us to stop
