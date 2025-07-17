@@ -100,6 +100,11 @@ func (r *RunningBox) run(rsp IDLEEvent) error {
 		if err != nil {
 			return err
 		}
+	case FLAGCHANGED:
+		err := prepareAndRun(rsp.box.OnChangedMail, rsp.box.OnChangedMailPost, rsp)
+		if err != nil {
+			return err
+		}
 	case DELETEDMAIL:
 		err := prepareAndRun(rsp.box.OnDeletedMail, rsp.box.OnDeletedMailPost, rsp)
 		if err != nil {
@@ -116,6 +121,9 @@ func prepareAndRun(on, onpost string, event IDLEEvent) error {
 	callKind := "New"
 	if event.Reason == DELETEDMAIL {
 		callKind = "Deleted"
+	}
+	if event.Reason == FLAGCHANGED {
+		callKind = "Changed"
 	}
 
 	if on == "SKIP" || on == "" {
@@ -175,6 +183,8 @@ func shouldSkip(b Box) bool {
 	switch b.Reason {
 	case NEWMAIL:
 		return b.OnNewMail == "" || b.OnNewMail == "SKIP"
+	case FLAGCHANGED:
+		return b.OnChangedMail == "" || b.OnChangedMail == "SKIP"
 	case DELETEDMAIL:
 		return b.OnDeletedMail == "" || b.OnDeletedMail == "SKIP"
 	}
