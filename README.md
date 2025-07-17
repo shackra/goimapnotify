@@ -26,6 +26,8 @@ configurations:
             -
                 mailbox: INBOX
                 onNewMail: 'mbsync examplecom:INBOX'
+                onChangedMail: 'mbsync examplenet:INBOX'
+                onChangedMailPost: SKIP
                 onNewMailPost: SKIP
     -
         hostCMD: COMMAND_TO_RETRIEVE_HOST
@@ -41,6 +43,8 @@ configurations:
         xoAuth2: false
         onNewMail: ''
         onNewMailPost: ''
+        onChangedMail: ''
+        onChangedMailPost: ''
         onDeletedMail: ''
         onDeletedMailPost: ''
         boxes:
@@ -48,6 +52,7 @@ configurations:
                 mailbox: INBOX
                 onNewMail: 'mbsync examplenet:INBOX'
                 onNewMailPost: SKIP
+                onChangedMail: 'mbsync examplenet:INBOX'
             -
                 mailbox: Junk
                 onNewMail: 'mbsync examplenet:Junk'
@@ -58,6 +63,8 @@ On first start, the application will run `onNewMail` and `onNewMailPost` and the
 
 - `onNewMail`: is an executable or script to run when new mail has arrived.
 - `onNewMailPost`: is an executable or script to run after `onNewMail` has ran.
+- `onChangedMail`: is an executable or script to run when a flag changed on an email (Seen, Flagged, ...).
+- `onChangedMailPost`: is an executable or script to run  after `onChangedMail` has ran.
 - `onDeletedMail`: is an executable or script to run when mail has been delete.
 - `onDeletedMailPost`: is an executable or script to run after `onDeletedMail` has ran.
 - `hostCMD`: is an executable or script that retrieves your host from somewhere, we cannot pass arguments to this command from `Stdin`.

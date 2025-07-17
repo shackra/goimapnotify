@@ -32,6 +32,7 @@ type EventType int
 const (
 	NEWMAIL EventType = iota + 1
 	DELETEDMAIL
+        FLAGCHANGED
 )
 
 func (e EventType) String() string {
@@ -40,6 +41,8 @@ func (e EventType) String() string {
 		return "New Email"
 	case DELETEDMAIL:
 		return "Deleted Email"
+	case FLAGCHANGED:
+		return "Changed Flag on Email"
 	default:
 		return "Unknown Event"
 	}
@@ -82,6 +85,8 @@ type ConfigurationLegacy struct {
 	XOAuth2           bool             `yaml:"xoAuth2"           json:"xoAuth2"`
 	OnNewMail         string           `yaml:"onNewMail"         json:"onNewMail"`
 	OnNewMailPost     string           `yaml:"onNewMailPost"     json:"onNewMailPost"`
+	OnChangedMail     string           `yaml:"onChangedMail"     json:"onChangedMail"`
+	OnChangedMailPost string           `yaml:"onChangedMailPost" json:"onChangedMailPost"`
 	OnDeletedMail     string           `yaml:"onDeletedMail"     json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
 	Boxes             []string         `yaml:"boxes"             json:"boxes"`
@@ -104,6 +109,8 @@ type NotifyConfig struct {
 	XOAuth2           bool             `yaml:"xoAuth2"           json:"xoAuth2"`
 	OnNewMail         string           `yaml:"onNewMail"         json:"onNewMail"`
 	OnNewMailPost     string           `yaml:"onNewMailPost"     json:"onNewMailPost"`
+	OnChangedMail     string           `yaml:"onChangedMail"     json:"onChangedMail"`
+	OnChangedMailPost string           `yaml:"onChangedMailPost" json:"onChangedMailPost"`
 	OnDeletedMail     string           `yaml:"onDeletedMail"     json:"onDeletedMail"`
 	OnDeletedMailPost string           `yaml:"onDeletedMailPost" json:"onDeletedMailPost"`
 	Boxes             []Box            `yaml:"boxes"             json:"boxes"`
@@ -125,6 +132,8 @@ type Box struct {
 	Reason            EventType `json:"-"                 yaml:"-"`
 	OnNewMail         string    `json:"onNewMail"         yaml:"onNewMail"`
 	OnNewMailPost     string    `json:"onNewMailPost"     yaml:"onNewMailPost"`
+	OnChangedMail     string    `json:"onChangedMail"     yaml:"onChangedMail"`
+	OnChangedMailPost string    `json:"onChangedMailPost" yaml:"onChangedMailPost"`
 	OnDeletedMail     string    `json:"onDeletedMail"     yaml:"onDeletedMail"`
 	OnDeletedMailPost string    `json:"onDeletedMailPost" yaml:"onDeletedMailPost"`
 	ExistingEmail     uint32    `json:"-"                 yaml:"-"`
@@ -145,6 +154,8 @@ func legacyConverter(conf ConfigurationLegacy) []NotifyConfig {
 	c.XOAuth2 = conf.XOAuth2
 	c.OnNewMail = conf.OnNewMail
 	c.OnNewMailPost = conf.OnNewMailPost
+	c.OnChangedMail = conf.OnChangedMail
+	c.OnChangedMailPost = conf.OnChangedMailPost
 	c.OnDeletedMail = conf.OnDeletedMail
 	c.OnDeletedMailPost = conf.OnDeletedMailPost
 	c.IDLELogoutTimeout = conf.IDLELogoutTimeout

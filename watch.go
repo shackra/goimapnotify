@@ -103,7 +103,16 @@ func (w *WatchMailBox) Watch() {
 					box:           w.box,
 				}
 			}
-
+			_ , ok = update.(*client.MessageUpdate)
+			if ok {
+				// messages flags updated
+				w.idleEvent <- IDLEEvent{
+					Alias:         w.box.Alias,
+					Mailbox:       w.box.Mailbox,
+					Reason:        FLAGCHANGED,
+					box:           w.box,
+				}
+			}
 			_, ok = update.(*client.ExpungeUpdate)
 			if ok {
 				// messages deleted
