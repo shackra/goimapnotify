@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Features
+- Add an option to launch synchronization when message flag changes
+
 
 <a name="2.5.3"></a>
 ## [2.5.3] - 2025-07-10
